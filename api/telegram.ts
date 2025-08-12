@@ -88,7 +88,12 @@ function renderInvoice(args: {
   buyer_name: string; buyer_inn: string; buyer_kpp: string;
   items: { name: string; qty: number; unit?: string; price: number }[];
 }) {
-  const rows = args.items.map((i, n) => `${n + 1}. ${i.name}  ${i.qty} ${i.unit || ""}  ${i.price}  ${i.qty * i.price}`).join("\n");
+  const rows = args.items
+    .map(
+      (i, n) =>
+        `${n + 1}. ${i.name}  ${i.qty} ${i.unit || ""}  ${i.price}  ${i.qty * i.price}`
+    )
+    .join("\n");
   const total = args.items.reduce((s, i) => s + i.qty * i.price, 0);
   return `Счёт № ${args.invoice_number} от ${args.invoice_date}
 
@@ -121,7 +126,10 @@ export default async function handler(req: any, res: any) {
         return res.status(200).end("ok");
       }
       if (text === BTN_CONTRACT) {
-        await send(chat, "Пришлите фрагменты договора + чью позицию защищаем (наша/их), тип договора, ключевые условия.");
+        await send(
+          chat,
+          "Пришлите фрагменты договора + чью позицию защищаем (наша/их), тип договора, ключевые условия."
+        );
         return res.status(200).end("ok");
       }
       if (text === BTN_PARTY) {
@@ -137,11 +145,14 @@ export default async function handler(req: any, res: any) {
         return res.status(200).end("ok");
       }
       if (text === BTN_FAQ) {
-        await send(chat, `FAQ:
+        await send(
+          chat,
+          `FAQ:
 • «Проверка договора» — пришлите текст, верну таблицу рисков и правки.
 • «Проверка контрагента» — ИНН/название → краткая сводка.
 • «Создать документ» — выберите шаблон, подставлю реквизиты.
-• «Диалог с ИИ» — свободные вопросы по праву.`);
+• «Диалог с ИИ» — свободные вопросы по праву.`
+        );
         return res.status(200).end("ok");
       }
 
