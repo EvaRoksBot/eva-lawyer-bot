@@ -123,7 +123,7 @@ const renderSpec = (spec: string, contract: string, cdate: string, items: any[])
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
-    res.status(405).end();
+    res.status(405).json({ error: "Method Not Allowed" });
     return;
   }
   const upd = req.body;
@@ -136,27 +136,27 @@ export default async function handler(req: any, res: any) {
 
       if (text === "/start") {
         await send(chat, "Привет! Я Ева Юрист. Выберите действие или задайте вопрос.", { reply_markup: mainKB() });
-        res.status(200).end("ok");
+        res.status(200).json({ ok: true });
         return;
       }
       if (text === BTN_CONTRACT) {
         await send(chat, "Пришлите фрагменты договора + чью позицию защищаем ( наша/их), тип договора, ключевые условия.");
-        res.status(200).end("ok");
+        res.status(200).json({ ok: true });
         return;
       }
       if (text === BTN_PARTY) {
         await send(chat, "Укажите ИНН (10/12 цифр) или название компании одной строкой — проверю сводку по DaData.");
-        res.status(200).end("ok");
+        res.status(200).json({ ok: true });
         return;
       }
       if (text === BTN_DOCS) {
         await send(chat, "Какой документ сформировать?", { reply_markup: inlineDocs() });
-        res.status(200).end("ok");
+        res.status(200).json({ ok: true });
         return;
       }
       if (text === BTN_CHAT) {
         await send(chat, "Диалог с ИИ: задайте вопрос юридически — при необходимости обращусь к практике.");
-        res.status(200).end("ok");
+        res.status(200).json({ ok: true });
         return;
       }
       if (text === BTN_FAQ) {
@@ -165,14 +165,14 @@ export default async function handler(req: any, res: any) {
 • «Проверка контрагента» — ИНН/название → краткая сводка.
 • «Создать документ» — выберите шаблон, подставлю реквизиты.
 • «Диалог с ИИ» — свободные вопросы по праву.`);
-        res.status(200).end("ok");
+        res.status(200).json({ ok: true });
         return;
       }
 
       if (/^\d{10}(\d{2})?$/.test(text) || (text.length > 3 && text.toLowerCase().includes("ооо"))) {
         const summary = await dadataParty(text);
         await send(chat, summary);
-        res.status(200).end("ok");
+        res.status(200).json({ ok: true });
         return;
       }
 
@@ -181,7 +181,7 @@ export default async function handler(req: any, res: any) {
         text
       );
       await send(chat, answer);
-      res.status(200).end("ok");
+      res.status(200).json({ ok: true });
       return;
     }
 
@@ -210,15 +210,15 @@ export default async function handler(req: any, res: any) {
       }
 
       await tg("answerCallbackQuery", { callback_query_id: cq.id });
-      res.status(200).end("ok");
+      res.status(200).json({ ok: true });
       return;
     }
 
-    res.status(200).end("ok");
+    res.status(200).json({ ok: true });
     return;
   } catch (e) {
     console.error(e);
-    res.status(200).end("ok");
+    res.status(200).json({ ok: true });
     return;
   }
 }
