@@ -1,229 +1,318 @@
-/* Vercel serverless handler */
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import OpenAI from "openai";
+import OpenAI from 'openai';
 
-export const config = {
-  runtime: "nodejs18.x",
-};
+// Load helper modules for document and image extraction and content generation.
+const { extractText, extractTextFromImage } = require('../src/modules/extract');
+const { generateContract } = require('../src/modules/contract');
+const { generateCopy } = require('../src/modules/copywriter');
+const { generateSkillsRoadmap } = require('../src/modules/skills');
+const { generateAppeal } = require('../src/modules/appeal');
 
-const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
+/**
+ * Telegram bot handler for Vercel (Node runtime).
+ *
+ * This implementation uses standard Node.js semantics for serverless functions.
+ * It responds to incoming updates from Telegram, sends messages via the Bot API,
+ * integrates with OpenAI for natural language answers, and optionally queries
+ * DaData for counterparty checks when an INN or organisation name is provided.
+ *
+ * The main menu presented to users includes five options:
+ *   1. Проверка договора      – send contract text or key terms for analysis
+ *   2. Проверка контрагента    – supply INN or company name to retrieve a summary
+ *   3. Создать документ        – select a document template (invoice, contract, specification)
+ *   4. Диалог с ИИ             – free‑form chat with the assistant
+ *   5. FAQ                     – common questions and instructions
+ */
+
+// Load environment variables supplied by Vercel. These values should be
+// configured in the Vercel project settings rather than committed to the repo.
+const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
-const DADATA_API_KEY = process.env.DADATA_API_KEY || "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const DADATA_API_KEY = process.env.DADATA_API_KEY || '';
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
+
+// Initialise OpenAI client once. The client manages its own connection pooling.
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
-const BTN_CONTRACT = "Проверка договора";
-const BTN_PARTY    = "Проверка контрагента";
-const BTN_DOCS     = "Создать документ";
-const BTN_CHAT     = "Диалог с ИИ";
-const BTN_FAQ      = "FAQ";
+// Labels used in the reply keyboard. Centralising them here makes it easy to
+// change button text without modifying logic in multiple places.
+const BTN_CONTRACT_REVIEW = 'Проверка договора';
+const BTN_COUNTERPARTY = 'Проверка контрагента';
+const BTN_CREATE_DOC = 'Создать документ';
+const BTN_AI_CHAT = 'Диалог с ИИ';
+const BTN_FAQ = 'FAQ';
 
-function mainKB() {
+/**
+ * Construct the main reply keyboard shown to users when they start the bot.
+ */
+function buildMainKeyboard() {
   return {
     keyboard: [
-      [{ text: BTN_CONTRACT }, { text: BTN_PARTY }],
-      [{ text: BTN_DOCS }, { text: BTN_CHAT }],
-      [{ text: BTN_FAQ }]
+      [ { text: BTN_CONTRACT_REVIEW }, { text: BTN_COUNTERPARTY } ],
+      [ { text: BTN_CREATE_DOC }, { text: BTN_AI_CHAT } ],
+      [ { text: BTN_FAQ } ],
     ],
     resize_keyboard: true,
     is_persistent: true,
-    input_field_placeholder: "Выберите действие или задайте вопрос…"
+    input_field_placeholder: 'Выберите действие или задайте вопрос…',
   };
 }
-function inlineDocs() {
+
+/**
+ * Inline keyboard for the document creation menu. Users can choose which
+ * template to generate. For a real application, these handlers would prompt
+ * the user for the necessary fields and then construct a DOCX file. Here,
+ * simple text placeholders are returned instead for demonstration.
+ */
+function buildDocInlineKeyboard() {
   return {
-    inline_keyboard: [[
-      { text: "Счёт", callback_data: "doc:invoice" },
-      { text: "Договор поставки", callback_data: "doc:contract" },
-      { text: "Спецификация", callback_data: "doc:spec" }
-    ]]
+    inline_keyboard: [
+      [
+        { text: 'Счёт', callback_data: 'doc:invoice' },
+        { text: 'Договор поставки', callback_data: 'doc:contract' },
+        { text: 'Спецификация', callback_data: 'doc:spec' },
+      ],
+    ],
   };
 }
-async function tg(method: string, payload: any) {
-  await fetch(`${TG_API}/${method}`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload)
+
+/**
+ * Send a message via the Telegram Bot API. Additional fields like
+ * reply_markup can be passed in the `extra` parameter.
+ */
+async function sendMessage(chatId: number, text: string, extra: Record<string, any> = {}) {
+  await fetch(`${TG_API}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, ...extra }),
   });
 }
-async function send(chat_id: number, text: string, extra: any = {}) {
-  await tg("sendMessage", { chat_id, text, ...extra });
+
+/**
+ * Perform a counterparty lookup using the DaData API. If the query looks
+ * like an INN (10 or 12 digits) it uses the findById endpoint, otherwise
+ * suggest/party. Results are formatted for display to the user.
+ */
+async function dadataLookup(query: string): Promise<string> {
+  if (!DADATA_API_KEY) {
+    return 'Переменная DADATA_API_KEY не задана. Добавьте её в настройках Vercel.';
+  }
+  const isInn = /^\d{10}(\d{2})?$/.test(query);
+  const endpoint = isInn ? 'findById/party' : 'suggest/party';
+  try {
+    const resp = await fetch(`https://suggestions.dadata.ru/suggestions/api/4_1/rs/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Token ${DADATA_API_KEY}`,
+      },
+      body: JSON.stringify({ query }),
+    }).then(r => r.json());
+    const data = resp?.suggestions?.[0]?.data;
+    if (!data) return 'Не нашли данных. Проверьте ИНН или название организации.';
+    const name = data.name?.short_with_opf || data.name?.full_with_opf || '—';
+    const innkpp = `${data.inn || '—'} / ${data.kpp || '—'}`;
+    const addr = data.address?.value || '—';
+    const state = data.state?.status || 'ACTIVE';
+    return `🏢 ${name}\nИНН/КПП: ${innkpp}\nАдрес: ${addr}\nСтатус: ${state}`;
+  } catch {
+    return 'Ошибка при обращении к сервису DaData.';
+  }
 }
 
-const PROMPT_CONTRACT_REVIEW = `
-Ты — юрист по договорному праву. Проведи анализ текста договора
-с позиции клиента: выдели рисковые пункты, объясни риск, предложи правку.
-Формат таблицы: | Пункт | Риск | Предложение по правке |`;
-
-const PROMPT_GENERATE_CONTRACT = `
-Ты — юрист РФ. Спроси недостающие вводные и предложи структуру,
-после подтверждения сформируй черновик договора деловым языком.`;
-
-const PROMPT_CASE_SEARCH = `
-Найди и кратко изложи релевантные судебные решения (РФ/регион/период),
-с указанием номера дела, суда, даты, сути и ссылки. Без фейковых ссылок.`;
-
-const PROMPT_GOV_LETTER = `
-Составь официальное обращение в орган власти: вводная, мотивировка с нормами,
-резолютивная часть с чёткими требованиями.`;
-
-async function askOpenAI(system: string, user: string) {
-  const r = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user }
-    ]
-  });
-  return r.choices[0].message?.content?.trim() || "…";
-}
-
-async function dadataParty(query: string) {
-  if (!DADATA_API_KEY) return "Добавьте DADATA_API_KEY в переменные окружения.";
-  const resp = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/" +
-    (/^\d{10}(\d{2})?$/.test(query) ? "findById/party" : "suggest/party"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": `Token ${DADATA_API_KEY}`
+/**
+ * Query OpenAI ChatGPT for a legal assistant response. The system prompt
+ * encourages concise yet structured answers. If more advanced prompting
+ * behaviour is required (e.g. using saved prompts via responses API), this
+ * function can be extended accordingly.
+ */
+async function askAssistant(question: string): Promise<string> {
+  const messages: Array<{ role: 'system' | 'user'; content: string }> = [
+    {
+      role: 'system',
+      content:
+        'Ты — Ева Юрист, виртуальный юридический ассистент. Отвечай грамотно, структурированно и понятно: сначала дай краткий вывод, затем уточни детали. Если информации недостаточно, сформулируй, какие сведения нужны.',
     },
-    body: JSON.stringify({ query })
-  }).then(r => r.json()).catch(() => null);
-
-  const s = resp?.suggestions?.[0]?.data;
-  if (!s) return "Не нашли данных. Проверьте ИНН/название.";
-  const name = s.name?.short_with_opf || s.name?.full_with_opf || "—";
-  const innkpp = `${s.inn || "—"} / ${s.kpp || "—"}`;
-  const addr = s.address?.value || "—";
-  const state = s.state?.status || "ACTIVE";
-  return `🏢 ${name}
-ИНН/КПП: ${innkpp}
-Адрес: ${addr}
-Статус: ${state}`;
+    { role: 'user', content: question },
+  ];
+  const completion = await openai.chat.completions.create({
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    messages,
+    temperature: 0.5,
+    max_tokens: 700,
+  });
+  return completion.choices[0]?.message?.content || 'К сожалению, не удалось получить ответ.';
 }
 
-function renderInvoice(args: {
-  invoice_number: string; invoice_date: string;
-  supplier_name: string; supplier_inn: string; supplier_kpp: string;
-  buyer_name: string; buyer_inn: string; buyer_kpp: string;
-  items: { name: string; qty: number; unit?: string; price: number }[];
-}) {
-  const rows = args.items.map((i, n) => `${n + 1}. ${i.name}  ${i.qty} ${i.unit || ""}  ${i.price}  ${i.qty * i.price}`).join("\n");
-  const total = args.items.reduce((s, i) => s + i.qty * i.price, 0);
-  return `Счёт № ${args.invoice_number} от ${args.invoice_date}
-
-Поставщик: ${args.supplier_name}, ИНН ${args.supplier_inn}, КПП ${args.supplier_kpp}
-Покупатель: ${args.buyer_name}, ИНН ${args.buyer_inn}, КПП ${args.buyer_kpp}
-
-${rows}
-
-Итого: ${total} руб.`;
-}
-const renderContract = (n: string, city: string, date: string) =>
-  `Договор поставки № ${n}\nг. ${city} «${date}»\n\n... (\u0443\u0441\u043b\u043e\u0432\u0438\u044f, \u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u043e\u0441\u0442\u044c, \u0440\u0435\u043a\u0432\u0438\u0437\u0438\u0442\u044b \u0441\u0442\u043e\u0440\u043e\u043d) ...`;
-const renderSpec = (spec: string, contract: string, cdate: string, items: any[]) =>
-  `Спецификация № ${spec}\nк Договору № ${contract} от ${cdate}\n\n№ | Наименование | Ед. | Кол-во | Цена | НДС\n` +
-  items.map((i, k) => `${k + 1} | ${i.name} | ${i.unit} | ${i.qty} | ${i.price} | НДС ${i.vat}%`).join("\n");
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method Not Allowed" });
+/**
+ * Main handler for the Vercel Node function. Processes incoming updates
+ * from Telegram and dispatches actions based on message text or callback
+ * data. Always responds with a JSON object to satisfy the Telegram API.
+ */
+export default async function handler(req: any, res: any) {
+  // Only accept POST requests. Telegram always uses POST for webhooks.
+  if (req.method !== 'POST') {
+    res.status(405).json({ ok: false, error: 'Method Not Allowed' });
     return;
   }
-  const upd: any = req.body;
-
-  try {
-    if (upd.message) {
-      const m = upd.message;
-      const chat = m.chat.id;
-      const text: string = (m.text || "").trim();
-
-      if (text === "/start") {
-        await send(chat, "Привет! Я Ева Юрист. Выберите действие или задайте вопрос.", { reply_markup: mainKB() });
-        res.status(200).json({ ok: true });
-        return;
-      }
-      if (text === BTN_CONTRACT) {
-        await send(chat, "Пришлите фрагменты договора + чью позицию защищаем ( наша/их), тип договора, ключевые условия.");
-        res.status(200).json({ ok: true });
-        return;
-      }
-      if (text === BTN_PARTY) {
-        await send(chat, "Укажите ИНН (10/12 цифр) или название компании одной строкой — проверю сводку по DaData.");
-        res.status(200).json({ ok: true });
-        return;
-      }
-      if (text === BTN_DOCS) {
-        await send(chat, "Какой документ сформировать?", { reply_markup: inlineDocs() });
-        res.status(200).json({ ok: true });
-        return;
-      }
-      if (text === BTN_CHAT) {
-        await send(chat, "Диалог с ИИ: задайте вопрос юридически — при необходимости обращусь к практике.");
-        res.status(200).json({ ok: true });
-        return;
-      }
-      if (text === BTN_FAQ) {
-        await send(chat, `FAQ:
-• «Проверка договора» — пришлите текст, верну таблицу рисков и правки.
-• «Проверка контрагента» — ИНН/название → краткая сводка.
-• «Создать документ» — выберите шаблон, подставлю реквизиты.
-• «Диалог с ИИ» — свободные вопросы по праву.`);
-        res.status(200).json({ ok: true });
-        return;
-      }
-
-      if (/^\d{10}(\d{2})?$/.test(text) || (text.length > 3 && text.toLowerCase().includes("ооо"))) {
-        const summary = await dadataParty(text);
-        await send(chat, summary);
-        res.status(200).json({ ok: true });
-        return;
-      }
-
-      const answer = await askOpenAI(
-        `${PROMPT_CASE_SEARCH}\n\n${PROMPT_GENERATE_CONTRACT}`,
-        text
-      );
-      await send(chat, answer);
-      res.status(200).json({ ok: true });
-      return;
-    }
-
-    if (upd.callback_query) {
-      const cq = upd.callback_query;
-      const chat = cq.message.chat.id;
-      const data: string = cq.data;
-
-      if (data.startsWith("doc:")) {
-        if (data === "doc:invoice") {
-          await send(chat, renderInvoice({
-            invoice_number: "001", invoice_date: "11.08.2025",
-            supplier_name: "ООО Ромашка", supplier_inn: "7700000000", supplier_kpp: "770001001",
-            buyer_name: "ООО Василёк", buyer_inn: "7800000000", buyer_kpp: "780001001",
-            items: [{ name: "Юр. услуги", qty: 1, unit: "усл.", price: 10000 }]
-          }));
-        }
-        if (data === "doc:contract") {
-          await send(chat, renderContract("42", "Москва", "11.08.2025"));
-        }
-        if (data === "doc:spec") {
-          await send(chat, renderSpec("1", "42", "11.08.2025", [
-            { name: "Услуга", unit: "усл.", qty: 1, price: 10000, vat: 20 }
-          ]));
-        }
-      }
-
-      await tg("answerCallbackQuery", { callback_query_id: cq.id });
-      res.status(200).json({ ok: true });
-      return;
-    }
-
+  // Optionally verify the webhook secret token. If WEBHOOK_SECRET is set,
+  // the incoming header x-telegram-bot-api-secret-token must match.
+  const secretHeader = req.headers['x-telegram-bot-api-secret-token'];
+  if (WEBHOOK_SECRET && secretHeader !== WEBHOOK_SECRET) {
+    res.status(403).json({ ok: false, error: 'Forbidden' });
+    return;
+  }
+  const update = req.body;
+  const message = update.message || update.edited_message || null;
+  const callbackQuery = update.callback_query || null;
+  const chatId: number | undefined = message?.chat?.id ?? callbackQuery?.message?.chat?.id;
+  if (!chatId) {
+    // Without a chat ID there is nothing to do; acknowledge the update.
     res.status(200).json({ ok: true });
     return;
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ ok: false, error: 'Internal Server Error' });
+  }
+  const text: string = (message?.text || '').trim() || (callbackQuery?.data || '');
+
+  // === Attachment handling: documents (PDF/DOCX) and images ===
+  if (message?.document) {
+    try {
+      const fileId = message.document.file_id;
+      // Retrieve file path from Telegram
+      const fileInfoResp = await fetch(`${TG_API}/getFile?file_id=${fileId}`).then(r => r.json());
+      const filePath = fileInfoResp?.result?.file_path;
+      if (!filePath) throw new Error('No file path');
+      const fileUrl = `https://api.telegram.org/file/bot${TG_TOKEN}/${filePath}`;
+      const fileResp = await fetch(fileUrl);
+      const arrayBuffer = await fileResp.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const mimeType = message.document.mime_type || '';
+      let extracted = '';
+      try {
+        extracted = await extractText(buffer, mimeType);
+      } catch (err) {
+        extracted = '';
+      }
+      if (extracted) {
+        // Send extracted text to assistant for analysis
+        const answer = await askAssistant(extracted);
+        await sendMessage(chatId, answer);
+      } else {
+        await sendMessage(chatId, 'Не удалось извлечь текст из файла. Поддерживаются PDF и DOCX.');
+      }
+    } catch {
+      await sendMessage(chatId, 'Ошибка при обработке файла. Попробуйте ещё раз.');
+    }
+    res.status(200).json({ ok: true });
     return;
   }
+  if (message?.photo) {
+    try {
+      // Take the highest resolution photo (last in array)
+      const photos = message.photo;
+      const fileId = photos[photos.length - 1].file_id;
+      const fileInfoResp = await fetch(`${TG_API}/getFile?file_id=${fileId}`).then(r => r.json());
+      const filePath = fileInfoResp?.result?.file_path;
+      if (!filePath) throw new Error('No file path');
+      const fileUrl = `https://api.telegram.org/file/bot${TG_TOKEN}/${filePath}`;
+      const fileResp = await fetch(fileUrl);
+      const arrayBuffer = await fileResp.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      // Use GPT‑4o vision to extract text from image
+      const extracted = await extractTextFromImage(buffer, OPENAI_API_KEY);
+      if (extracted) {
+        const answer = await askAssistant(extracted);
+        await sendMessage(chatId, answer);
+      } else {
+        await sendMessage(chatId, 'Не удалось извлечь текст из изображения.');
+      }
+    } catch {
+      await sendMessage(chatId, 'Ошибка при обработке изображения.');
+    }
+    res.status(200).json({ ok: true });
+    return;
+  }
+  // Handle callback queries (e.g. inline keyboard presses)
+  if (callbackQuery) {
+    const data = callbackQuery.data as string;
+    // Document generation callbacks. Real implementation would build
+    // dynamic DOCX files; here we return simple placeholders.
+    if (data.startsWith('doc:')) {
+      let response = '';
+      if (data === 'doc:invoice') {
+        response = '🧾 Черновик счёта: здесь будет таблица товаров и итоговая сумма.';
+      } else if (data === 'doc:contract') {
+        response = '📄 Черновик договора поставки: номер, город, дата, предмет, ответственность…';
+      } else if (data === 'doc:spec') {
+        response = '📑 Черновик спецификации: список позиций, ед. измерения, количества, цены и НДС.';
+      }
+      await sendMessage(chatId, response);
+    }
+    // Always answer the callback query to remove the loading spinner
+    await fetch(`${TG_API}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callback_query_id: callbackQuery.id }),
+    });
+    res.status(200).json({ ok: true });
+    return;
+  }
+  // Process regular text messages and commands
+  if (text === '/start') {
+    await sendMessage(chatId, 'Привет! Я Ева Юрист. Выберите раздел или задайте вопрос.', {
+      reply_markup: buildMainKeyboard(),
+    });
+    res.status(200).json({ ok: true });
+    return;
+  }
+  if (text === BTN_CONTRACT_REVIEW) {
+    await sendMessage(chatId, 'Пришлите текст договора или основные условия для проверки.');
+    res.status(200).json({ ok: true });
+    return;
+  }
+  if (text === BTN_COUNTERPARTY) {
+    await sendMessage(chatId, 'Укажите ИНН (10 или 12 цифр) либо название компании — я подготовлю сводку.');
+    res.status(200).json({ ok: true });
+    return;
+  }
+  if (text === BTN_CREATE_DOC) {
+    await sendMessage(chatId, 'Какой документ сформировать?', {
+      reply_markup: buildDocInlineKeyboard(),
+    });
+    res.status(200).json({ ok: true });
+    return;
+  }
+  if (text === BTN_AI_CHAT) {
+    await sendMessage(chatId, 'Режим диалога с ИИ включён. Задайте ваш вопрос, и я постараюсь помочь.');
+    res.status(200).json({ ok: true });
+    return;
+  }
+  if (text === BTN_FAQ) {
+    await sendMessage(
+      chatId,
+      'FAQ:\n• *Проверка договора*: пришлите текст договора, я найду риски и предложу правки.\n' +
+        '• *Проверка контрагента*: укажите ИНН или название — верну краткую сводку.\n' +
+        '• *Создать документ*: выберите шаблон, подставлю ваши реквизиты.\n' +
+        '• *Диалог с ИИ*: свободные вопросы по праву.',
+      { parse_mode: 'Markdown' },
+    );
+    res.status(200).json({ ok: true });
+    return;
+  }
+  // Pattern for recognising potential INN or organisation names; if matched
+  // we query DaData for a summary.
+  if (/^\d{10}(\d{2})?$/.test(text) || text.toLowerCase().includes('ооо')) {
+    const summary = await dadataLookup(text);
+    await sendMessage(chatId, summary);
+    res.status(200).json({ ok: true });
+    return;
+  }
+  // Fallback: for any other message, call OpenAI and relay the answer
+  try {
+    const answer = await askAssistant(text);
+    await sendMessage(chatId, answer);
+  } catch {
+    await sendMessage(chatId, '⚠️ Ошибка при обращении к модели. Попробуйте ещё раз.');
+  }
+  res.status(200).json({ ok: true });
 }
