@@ -1,5 +1,6 @@
 /* Vercel serverless handler */
 import OpenAI from "openai";
+import { SYSTEM_PROMPT } from "../prompts";
 
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
@@ -44,28 +45,6 @@ async function tg(method: string, payload: any) {
 async function send(chat_id: number, text: string, extra: any = {}) {
   await tg("sendMessage", { chat_id, text, ...extra });
 }
-
-// === PROMPTS ===
-// Контракт-ревью — структура/подходы из твоей базы (таблица «пункт — риск — правка») :contentReference[oaicite:5]{index=5}
-const PROMPT_CONTRACT_REVIEW = `
-Ты — юрист по договорному праву. Проведи анализ текста договора
-с позиции клиента: выдели рисковые пункты, объясни риск, предложи правку.
-Формат таблицы: | Пункт | Риск | Предложение по правке |`;
-
-// Генератор договоров — шаги получения вводных и сборка структуры разделов :contentReference[oaicite:6]{index=6}
-const PROMPT_GENERATE_CONTRACT = `
-Ты — юрист РФ. Спроси недостающие вводные и предложи структуру,
-после подтверждения сформируй черновик договора деловым языком.`;
-
-// Точечный поиск практики (по периоду/региону/теме) — для диалога по правовым вопросам :contentReference[oaicite:7]{index=7}
-const PROMPT_CASE_SEARCH = `
-Найди и кратко изложи релевантные судебные решения (РФ/регион/период),
-с указанием номера дела, суда, даты, сути и ссылки. Без фейковых ссылок.`;
-
-// Обращения в госорганы — структура: вводная/мотивировочная/резолютивная :contentReference[oaicite:8]{index=8}
-const PROMPT_GOV_LETTER = `
-Составь официальное обращение в орган власти: вводная, мотивировка с нормами,
-резолютивная часть с чёткими требованиями.`;
 
 async function askOpenAI(system: string, user: string) {
   const r = await openai.chat.completions.create({
@@ -174,7 +153,7 @@ export default async function handler(req: any, res: any) {
 
       // По умолчанию — умный юр-диалог с поиском практики при запросе
       const answer = await askOpenAI(
-        `${PROMPT_CASE_SEARCH}\n\n${PROMPT_GENERATE_CONTRACT}`,
+        SYSTEM_PROMPT,
         text
       );
       await send(chat, answer);
