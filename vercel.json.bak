@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/telegram.ts": {
-      "runtime": "nodejs18.x"
-    }
-  }
-}
