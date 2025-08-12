@@ -39,8 +39,9 @@ function error(message: string, status = 400): Response {
  * Verify that the request came from Telegram by comparing the X-Telegram secret header.
  */
 function verifyTelegramSignature(headers: IncomingHttpHeaders): boolean {
+  if (!WEBHOOK_SECRET) return true;
   const token = headers['x-telegram-bot-api-secret-token'] as string | undefined;
-  return Boolean(WEBHOOK_SECRET && token && token === WEBHOOK_SECRET);
+  return token === WEBHOOK_SECRET;
 }
 
 /**
