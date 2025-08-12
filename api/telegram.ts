@@ -1,5 +1,10 @@
 /* Vercel serverless handler */
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import OpenAI from "openai";
+
+export const config = {
+  runtime: "nodejs18.x",
+};
 
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
@@ -121,12 +126,12 @@ const renderSpec = (spec: string, contract: string, cdate: string, items: any[])
   `Спецификация № ${spec}\nк Договору № ${contract} от ${cdate}\n\n№ | Наименование | Ед. | Кол-во | Цена | НДС\n` +
   items.map((i, k) => `${k + 1} | ${i.name} | ${i.unit} | ${i.qty} | ${i.price} | НДС ${i.vat}%`).join("\n");
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method Not Allowed" });
     return;
   }
-  const upd = req.body;
+  const upd: any = req.body;
 
   try {
     if (upd.message) {
