@@ -1,13 +1,12 @@
 {
-  "name": "eva-lawyer-bot",
-  "version": "1.0.0",
-  "type": "module",
+  "name": "eva-legal-bot",
   "private": true,
+  "type": "module",
   "dependencies": {
-    "openai": "^4.56.0"
+    "openai": "^4.55.0"
   },
   "scripts": {
-    "start": "vercel dev",
+    "test": "echo 'No tests specified'",
     "build": "echo 'No build step required'"
   }
 }
