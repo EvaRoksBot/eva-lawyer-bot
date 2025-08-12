@@ -1,5 +1,12 @@
 import OpenAI from 'openai';
 
+// Load helper modules for document and image extraction and content generation.
+const { extractText, extractTextFromImage } = require('../src/modules/extract');
+const { generateContract } = require('../src/modules/contract');
+const { generateCopy } = require('../src/modules/copywriter');
+const { generateSkillsRoadmap } = require('../src/modules/skills');
+const { generateAppeal } = require('../src/modules/appeal');
+
 /**
  * Telegram bot handler for Vercel (Node runtime).
  *
@@ -166,6 +173,65 @@ export default async function handler(req: any, res: any) {
     return;
   }
   const text: string = (message?.text || '').trim() || (callbackQuery?.data || '');
+
+  // === Attachment handling: documents (PDF/DOCX) and images ===
+  if (message?.document) {
+    try {
+      const fileId = message.document.file_id;
+      // Retrieve file path from Telegram
+      const fileInfoResp = await fetch(`${TG_API}/getFile?file_id=${fileId}`).then(r => r.json());
+      const filePath = fileInfoResp?.result?.file_path;
+      if (!filePath) throw new Error('No file path');
+      const fileUrl = `https://api.telegram.org/file/bot${TG_TOKEN}/${filePath}`;
+      const fileResp = await fetch(fileUrl);
+      const arrayBuffer = await fileResp.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const mimeType = message.document.mime_type || '';
+      let extracted = '';
+      try {
+        extracted = await extractText(buffer, mimeType);
+      } catch (err) {
+        extracted = '';
+      }
+      if (extracted) {
+        // Send extracted text to assistant for analysis
+        const answer = await askAssistant(extracted);
+        await sendMessage(chatId, answer);
+      } else {
+        await sendMessage(chatId, 'Не удалось извлечь текст из файла. Поддерживаются PDF и DOCX.');
+      }
+    } catch {
+      await sendMessage(chatId, 'Ошибка при обработке файла. Попробуйте ещё раз.');
+    }
+    res.status(200).json({ ok: true });
+    return;
+  }
+  if (message?.photo) {
+    try {
+      // Take the highest resolution photo (last in array)
+      const photos = message.photo;
+      const fileId = photos[photos.length - 1].file_id;
+      const fileInfoResp = await fetch(`${TG_API}/getFile?file_id=${fileId}`).then(r => r.json());
+      const filePath = fileInfoResp?.result?.file_path;
+      if (!filePath) throw new Error('No file path');
+      const fileUrl = `https://api.telegram.org/file/bot${TG_TOKEN}/${filePath}`;
+      const fileResp = await fetch(fileUrl);
+      const arrayBuffer = await fileResp.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      // Use GPT‑4o vision to extract text from image
+      const extracted = await extractTextFromImage(buffer, OPENAI_API_KEY);
+      if (extracted) {
+        const answer = await askAssistant(extracted);
+        await sendMessage(chatId, answer);
+      } else {
+        await sendMessage(chatId, 'Не удалось извлечь текст из изображения.');
+      }
+    } catch {
+      await sendMessage(chatId, 'Ошибка при обработке изображения.');
+    }
+    res.status(200).json({ ok: true });
+    return;
+  }
   // Handle callback queries (e.g. inline keyboard presses)
   if (callbackQuery) {
     const data = callbackQuery.data as string;
