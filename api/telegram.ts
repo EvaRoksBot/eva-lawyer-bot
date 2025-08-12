@@ -218,7 +218,7 @@ export default async function handler(req: any, res: any) {
     return;
   } catch (e) {
     console.error(e);
-    res.status(200).json({ ok: true });
+    res.status(500).json({ ok: false, error: 'Internal Server Error' });
     return;
   }
 }
