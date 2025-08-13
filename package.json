@@ -1,14 +1,1 @@
-{
-  "name": "eva-lawyer-bot",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "openai": "^4.56.0",
-    "pdf-parse": "^1.1.1",
-    "mammoth": "^1.4.15"
-  },
-  "scripts": {
-    "start": "vercel dev",
-    "build": "echo 'No build step required'"
-  }
-}
+{"name": "eva-lawyer-bot","version": "1.0.0","private": true,"dependencies": {"openai": "^4.56.0","pdf-parse": "^1.1.1","mammoth": "^1.4.15"},"devDependencies": {"@types/node": "^20.0.0","typescript": "^5.0.0"},"scripts": {"start": "vercel dev","build": "tsc --noEmit","test": "tsc --noEmit","dev": "vercel dev"}}
