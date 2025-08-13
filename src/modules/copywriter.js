@@ -8,14 +8,14 @@ const OpenAI = require('openai');
  * enforce company style guidelines or specific legal phrasing.
  *
  * @param {string} brief The task description or raw draft.
- * @param {Object} options Additional options such as tone or audience.
  * @param {string} apiKey Your OpenAI API key.
+ * @param {Object} [options] Additional options such as tone or audience.
  * @returns {Promise<string>} The edited or generated copy.
  */
-async function generateCopy(brief, options, apiKey) {
+async function generateCopy(brief, apiKey, options = {}) {
   const openai = new OpenAI({ apiKey });
-  const tone = options?.tone || 'деловой';
-  const audience = options?.audience || 'контрагенты';
+  const tone = options.tone || 'деловой';
+  const audience = options.audience || 'контрагенты';
   const systemPrompt =
     `Ты — профессиональный юрист‑копирайтер. Пиши грамотно,\n` +
     `лаконично и понятным языком для аудитории: ${audience}.`; 
