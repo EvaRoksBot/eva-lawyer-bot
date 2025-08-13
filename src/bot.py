@@ -2,6 +2,8 @@ import os
 import io
 import logging
 import tempfile
+import shutil
+import subprocess
 
 from dotenv import load_dotenv
 
@@ -27,11 +29,12 @@ from telegram.ext import (
 # ---- LLM (OpenAI SDK v1.x) -----------------------------------------------
 from openai import OpenAI
 
-logging.basicConfig(level=logging.INFO)
+load_dotenv()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
 log = logging.getLogger("eva-lawyer-bot")
 
 # ---- env ------------------------------------------------------------------
-load_dotenv()
 
 # читаем как стандартные имена, так и альтернативные
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("AI_API_KEY", "")
@@ -51,6 +54,49 @@ SYSTEM_PROMPT = (
     "Ты юридический ассистент. Отвечай чётко и структурированно. "
     "Если не хватает данных, укажи, что нужно уточнить. Язык ответа: русский."
 )
+
+MAX_INPUT_CHARS = 18000
+
+
+def cut_telegram(text: str, limit: int = 4000) -> str:
+    return text if len(text) <= limit else text[: limit - 50] + "\n…(обрезано)"
+
+
+def ocr_pdf_bytes(file_bytes: bytes) -> str:
+    try:
+        images = convert_from_bytes(file_bytes)
+    except Exception as e:
+        return f"[OCR] Не удалось конвертировать PDF: {e}"
+    parts = []
+    for i, image in enumerate(images, 1):
+        try:
+            txt = pytesseract.image_to_string(image, lang="rus")
+        except pytesseract.TesseractNotFoundError:
+            return "[OCR] Не найден бинарник tesseract-ocr"
+        except Exception as e:
+            txt = f"[OCR] Ошибка на стр. {i}: {e}"
+        parts.append(f"\nСтраница {i}:\n{txt}")
+    return "\n".join(parts).strip()
+
+
+def read_docx_bytes(file_bytes: bytes) -> str:
+    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+        tmp.write(file_bytes)
+        tmp.flush()
+        docx = Document(tmp.name)
+    parts = [p.text for p in docx.paragraphs if p.text]
+    for t in docx.tables:
+        for row in t.rows:
+            cells = [c.text.strip() for c in row.cells]
+            parts.append(" | ".join(cells))
+    return "\n".join(filter(None, parts)).strip()
+
+
+def read_txt_bytes(file_bytes: bytes) -> str:
+    try:
+        return file_bytes.decode("utf-8", errors="replace").strip()
+    except Exception:
+        return file_bytes.decode("cp1251", errors="replace").strip()
 
 
 # ---- LLM helpers ----------------------------------------------------------
@@ -105,6 +151,26 @@ async def cmd_ping(update: Update, _: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("pong")
 
 
+async def cmd_diag(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    bins = {
+        "tesseract": shutil.which("tesseract"),
+        "pdftoppm": shutil.which("pdftoppm"),
+    }
+    env_ok = bool(OPENAI_API_KEY and TELEGRAM_BOT_TOKEN)
+    try:
+        tver = subprocess.check_output(["tesseract", "--version"], text=True).splitlines()[0]
+    except Exception as e:
+        tver = f"err: {e}"
+    msg = (
+        f"✅ ENV: {env_ok}\n"
+        f"🔑 AI key: {bool(OPENAI_API_KEY)} | 🤖 TG token: {bool(TELEGRAM_BOT_TOKEN)}\n"
+        f"🧠 Model: {AI_MODEL}\n"
+        f"📦 Binaries: {bins}\n"
+        f"🖹 tesseract: {tver}\n"
+    )
+    await update.message.reply_text(cut_telegram(msg))
+
+
 # Универсальная обработка документов: PDF (OCR) / DOCX / TXT
 async def handle_any_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.document:
@@ -120,35 +186,17 @@ async def handle_any_document(update: Update, context: ContextTypes.DEFAULT_TYPE
     # 1) PDF через OCR
     if "pdf" in mime or name.endswith(".pdf"):
         await update.message.reply_text("Распознаю PDF…")
-        images = convert_from_bytes(bytes(file_bytes))
-        full_text = []
-        for i, image in enumerate(images, 1):
-            page_text = pytesseract.image_to_string(image, lang="rus")
-            full_text.append(f"\nСтраница {i}:\n{page_text}")
-        extracted = "\n".join(full_text).strip()
+        extracted = ocr_pdf_bytes(bytes(file_bytes))
 
     # 2) DOCX нативно
     elif "wordprocessingml" in mime or name.endswith(".docx"):
         await update.message.reply_text("Читаю .docx…")
-        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
-            tmp.write(file_bytes)
-            tmp.flush()
-            docx = Document(tmp.name)
-        parts = []
-        parts.extend(p.text for p in docx.paragraphs if p.text)
-        for t in docx.tables:
-            for row in t.rows:
-                cells = [c.text.strip() for c in row.cells]
-                parts.append(" | ".join(cells))
-        extracted = "\n".join(filter(None, parts)).strip()
+        extracted = read_docx_bytes(bytes(file_bytes))
 
     # 3) TXT
     elif mime.startswith("text/") or name.endswith(".txt"):
         await update.message.reply_text("Читаю .txt…")
-        try:
-            extracted = bytes(file_bytes).decode("utf-8", errors="replace").strip()
-        except Exception:
-            extracted = bytes(file_bytes).decode("cp1251", errors="replace").strip()
+        extracted = read_txt_bytes(bytes(file_bytes))
 
     else:
         await update.message.reply_text("Формат не поддержан. Пришлите PDF, DOCX или TXT.")
@@ -177,7 +225,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await query.edit_message_text("Обрабатываю запрос ИИ…")
-    snippet = text if len(text) <= 18000 else text[:18000]
+    snippet = text if len(text) <= MAX_INPUT_CHARS else text[:MAX_INPUT_CHARS]
     prompt = build_task_prompt(task, snippet)
 
     try:
@@ -187,7 +235,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         answer = f"Ошибка вызова ИИ: {e}"
 
     # Telegram ограничение ~4096 символов
-    await query.edit_message_text(answer[:4000] if answer else "Пустой ответ.")
+    await query.edit_message_text(cut_telegram(answer) if answer else "Пустой ответ.")
 
 
 # ---- app ------------------------------------------------------------------
@@ -195,6 +243,7 @@ def build_app() -> Application:
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("ping", cmd_ping))
+    app.add_handler(CommandHandler("diag", cmd_diag))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_any_document))
     app.add_handler(CallbackQueryHandler(on_button))
     return app
