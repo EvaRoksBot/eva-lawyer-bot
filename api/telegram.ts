@@ -1,5 +1,6 @@
 import { IncomingHttpHeaders } from 'http';
 import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 // Environment variables are injected by Vercel at runtime.
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
@@ -87,10 +88,10 @@ async function checkCounterpartySafe(_query: string): Promise<string | null> {
 }
 
 async function askOpenAI(text: string): Promise<string> {
-  const messages = [
+  const messages: ChatCompletionMessageParam[] = [
     { role: 'system', content: 'Ты — Ева Юрист, виртуальный юридический ассистент.' },
     { role: 'user', content: text },
-  ] as const;
+  ];
   const completion = await openaiClient.chat.completions.create({
     model: OPENAI_MODEL,
     messages,
@@ -119,7 +120,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return error('Method Not Allowed', 405);
   }
-  if (!verifyTelegramSignature(Object.fromEntries(req.headers) as any)) {
+  if (!verifyTelegramSignature(Object.fromEntries([...req.headers]) as any)) {
     return error('Forbidden', 403);
   }
 
