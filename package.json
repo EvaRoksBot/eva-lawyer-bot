@@ -8,6 +8,10 @@
   },
   "scripts": {
     "start": "vercel dev",
-    "build": "echo 'No build step required'"
+    "build": "echo 'No build step required'",
+    "test": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
   }
 }
