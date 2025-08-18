@@ -1,11 +1,11 @@
 import OpenAI from 'openai';
 
 // Load helper modules for document and image extraction and content generation.
-const { extractText, extractTextFromImage } = require('../src/modules/extract');
-const { generateContract } = require('../src/modules/contract');
-const { generateCopy } = require('../src/modules/copywriter');
-const { generateSkillsRoadmap } = require('../src/modules/skills');
-const { generateAppeal } = require('../src/modules/appeal');
+const { extractText, extractTextFromImage } = require('./src/modules/extract');
+const { generateContract } = require('./src/modules/contract');
+const { generateCopy } = require('./src/modules/copywriter');
+const { generateSkillsRoadmap } = require('./src/modules/skills');
+const { generateAppeal } = require('./src/modules/appeal');
 
 /**
  * Telegram bot handler for Vercel (Node runtime).
