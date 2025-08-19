@@ -1,11 +1,11 @@
 import OpenAI from 'openai';
 
 // Load helper modules for document and image extraction and content generation.
-const { extractText, extractTextFromImage } = require('../src/modules/extract');
-const { generateContract } = require('../src/modules/contract');
-const { generateCopy } = require('../src/modules/copywriter');
-const { generateSkillsRoadmap } = require('../src/modules/skills');
-const { generateAppeal } = require('../src/modules/appeal');
+const { extractText, extractTextFromImage } = require('./src/modules/extract');
+const { generateContract } = require('./src/modules/contract');
+const { generateCopy } = require('./src/modules/copywriter');
+const { generateSkillsRoadmap } = require('./src/modules/skills');
+const { generateAppeal } = require('./src/modules/appeal');
 
 /**
  * Telegram bot handler for Vercel (Node runtime).
@@ -131,8 +131,7 @@ async function askAssistant(question: string): Promise<string> {
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [
     {
       role: 'system',
-      content:
-        'Ты — Ева Юрист, виртуальный юридический ассистент. Отвечай грамотно, структурированно и понятно: сначала дай краткий вывод, затем уточни детали. Если информации недостаточно, сформулируй, какие сведения нужны.',
+      content: 'Ты — Ева Юрист, виртуальный юридический ассистент. Отвечай грамотно, структурированно и понятно: сначала дай краткий вывод, затем уточни детали. Если информации недостаточно, сформулируй, какие сведения нужны.',
     },
     { role: 'user', content: question },
   ];
