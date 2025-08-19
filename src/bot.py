@@ -100,16 +100,27 @@ async def ocr_pdf_bytes(file_bytes: bytes) -> str:
 
 
 def read_docx_bytes(file_bytes: bytes) -> str:
+    """Extract text content from DOCX bytes.
+
+    The bytes are written to a temporary file for processing via
+    ``python-docx``. The temporary file is removed afterwards to avoid
+    leaving artifacts on disk.
+    """
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
         tmp.write(file_bytes)
         tmp.flush()
-        doc = Document(tmp.name)
-    chunks = [p.text for p in doc.paragraphs if p.text]
-    for t in doc.tables:
-        for row in t.rows:
-            cells = [c.text.strip() for c in row.cells]
-            chunks.append(" | ".join(cells))
-    return "\n".join(filter(None, chunks)).strip()
+        tmp_path = tmp.name
+
+    try:
+        doc = Document(tmp_path)
+        chunks = [p.text for p in doc.paragraphs if p.text]
+        for table in doc.tables:
+            for row in table.rows:
+                cells = [cell.text.strip() for cell in row.cells]
+                chunks.append(" | ".join(cells))
+        return "\n".join(filter(None, chunks)).strip()
+    finally:
+        os.unlink(tmp_path)
 
 
 def read_txt_bytes(file_bytes: bytes) -> str:
