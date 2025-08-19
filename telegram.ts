@@ -1,11 +1,12 @@
 import OpenAI from 'openai';
 
 // Load helper modules for document and image extraction and content generation.
-const { extractText, extractTextFromImage } = require('../src/modules/extract');
-const { generateContract } = require('../src/modules/contract');
-const { generateCopy } = require('../src/modules/copywriter');
-const { generateSkillsRoadmap } = require('../src/modules/skills');
-const { generateAppeal } = require('../src/modules/appeal');
+const { extractText, extractTextFromImage } = require('./src/modules/extract');
+const { generateContract } = require('./src/modules/contract');
+const { generateCopy } = require('./src/modules/copywriter');
+const { generateSkillsRoadmap } = require('./src/modules/skills');
+const { generateAppeal } = require('./src/modules/appeal');
+const { lookupCounterparty } = require('./src/modules/counterparty');
 
 /**
  * Telegram bot handler for Vercel (Node runtime).
@@ -86,39 +87,6 @@ async function sendMessage(chatId: number, text: string, extra: Record<string, a
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text, ...extra }),
   });
-}
-
-/**
- * Perform a counterparty lookup using the DaData API. If the query looks
- * like an INN (10 or 12 digits) it uses the findById endpoint, otherwise
- * suggest/party. Results are formatted for display to the user.
- */
-async function dadataLookup(query: string): Promise<string> {
-  if (!DADATA_API_KEY) {
-    return 'Переменная DADATA_API_KEY не задана. Добавьте её в настройках Vercel.';
-  }
-  const isInn = /^\d{10}(\d{2})?$/.test(query);
-  const endpoint = isInn ? 'findById/party' : 'suggest/party';
-  try {
-    const resp = await fetch(`https://suggestions.dadata.ru/suggestions/api/4_1/rs/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Token ${DADATA_API_KEY}`,
-      },
-      body: JSON.stringify({ query }),
-    }).then(r => r.json());
-    const data = resp?.suggestions?.[0]?.data;
-    if (!data) return 'Не нашли данных. Проверьте ИНН или название организации.';
-    const name = data.name?.short_with_opf || data.name?.full_with_opf || '—';
-    const innkpp = `${data.inn || '—'} / ${data.kpp || '—'}`;
-    const addr = data.address?.value || '—';
-    const state = data.state?.status || 'ACTIVE';
-    return `🏢 ${name}\nИНН/КПП: ${innkpp}\nАдрес: ${addr}\nСтатус: ${state}`;
-  } catch {
-    return 'Ошибка при обращении к сервису DaData.';
-  }
 }
 
 /**
@@ -302,7 +270,7 @@ export default async function handler(req: any, res: any) {
   // Pattern for recognising potential INN or organisation names; if matched
   // we query DaData for a summary.
   if (/^\d{10}(\d{2})?$/.test(text) || text.toLowerCase().includes('ооо')) {
-    const summary = await dadataLookup(text);
+    const summary = await lookupCounterparty(text, DADATA_API_KEY);
     await sendMessage(chatId, summary);
     res.status(200).json({ ok: true });
     return;
