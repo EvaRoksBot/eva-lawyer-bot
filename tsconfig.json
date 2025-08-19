@@ -1,1 +1,38 @@
-{\n  "compilerOptions": {\n    "target": "ES2020",\n    "module": "commonjs",\n    "lib": ["ES2020"],\n    "outDir": "./dist",\n    "rootDir": "./",\n    "strict": true,\n    "esModuleInterop": true,\n    "allowSyntheticDefaultImports": true,\n    "skipLibCheck": true,\n    "forceConsistentCasingInFileNames": true,\n    "moduleResolution": "node",\n    "resolveJsonModule": true,\n    "noEmit": true\n  },\n  "include": [\n    "api/**/*",\n    "src/**/*"\n  ],\n  "exclude": [\n    "node_modules",\n    "dist"\n  ]\n}
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/api/*": ["./api/*"]
+    },
+    "types": ["node"],
+    "declaration": true,
+    "outDir": "./dist"
+  },
+  "include": [
+    "api/**/*",
+    "src/**/*",
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".vercel",
+    "**/*.test.ts"
+  ]
+}
+
