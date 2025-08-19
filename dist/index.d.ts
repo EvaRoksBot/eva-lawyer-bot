@@ -1,28 +1,50 @@
-import { Project } from 'ts-morph';
-import { FromSchema, JSONSchema } from 'json-schema-to-ts';
-export declare const BaseFunctionConfigSchema: {
-    readonly type: "object";
-    readonly properties: {
-        readonly runtime: {
-            readonly type: "string";
-        };
-        readonly memory: {
-            readonly type: "number";
-        };
-        readonly maxDuration: {
-            readonly type: "number";
-        };
-        readonly regions: {
-            readonly oneOf: readonly [{
-                readonly type: "array";
-                readonly items: {
-                    readonly type: "string";
-                };
-            }, {
-                readonly enum: readonly ["all", "default", "auto"];
-            }];
-        };
-    };
+import type { ServerResponse, IncomingMessage } from 'http';
+import type { Headers } from 'undici';
+import type { Readable } from 'stream';
+
+export type VercelRequestCookies = { [key: string]: string };
+export type VercelRequestQuery = { [key: string]: string | string[] };
+export type VercelRequestBody = any;
+
+export type VercelRequest = IncomingMessage & {
+  query: VercelRequestQuery;
+  cookies: VercelRequestCookies;
+  body: VercelRequestBody;
 };
-export type BaseFunctionConfig = FromSchema<typeof BaseFunctionConfigSchema>;
-export declare function getConfig<T extends JSONSchema = typeof BaseFunctionConfigSchema>(project: Project, sourcePath: string, schema?: T): FromSchema<T> | null;
+
+export type VercelResponse = ServerResponse & {
+  send: (body: any) => VercelResponse;
+  json: (jsonBody: any) => VercelResponse;
+  status: (statusCode: number) => VercelResponse;
+  redirect: (statusOrUrl: string | number, url?: string) => VercelResponse;
+};
+
+export type VercelApiHandler = (
+  req: VercelRequest,
+  res: VercelResponse
+) => void | Promise<void>;
+
+/** @deprecated Use VercelRequestCookies instead. */
+export type NowRequestCookies = VercelRequestCookies;
+
+/** @deprecated Use VercelRequestQuery instead. */
+export type NowRequestQuery = VercelRequestQuery;
+
+/** @deprecated Use VercelRequestBody instead. */
+export type NowRequestBody = any;
+
+/** @deprecated Use VercelRequest instead. */
+export type NowRequest = VercelRequest;
+
+/** @deprecated Use VercelResponse instead. */
+export type NowResponse = VercelResponse;
+
+/** @deprecated Use VercelApiHandler instead. */
+export type NowApiHandler = VercelApiHandler;
+
+export interface VercelProxyResponse {
+  status: number;
+  headers: Headers;
+  body: Readable | Buffer | null;
+  encoding: BufferEncoding;
+}
