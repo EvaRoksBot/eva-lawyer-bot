@@ -1,20 +1,26 @@
-# @vercel/gatsby-plugin-vercel-builder
+# Eva Lawyer Bot
 
-This plugin generates [Vercel Build Output API v3](https://vercel.com/docs/build-output-api/v3) for Gatsby v4+ projects.
+Telegram bot that leverages OpenAI to analyze legal documents.
 
-The Vercel platform automatically injects this plugin for you if it can detect Gatsby v4+ in your project's `package.json` dependencies. If detected, you will see a log message in your project's [build logs](https://vercel.com/docs/concepts/deployments/logs#build-logs) as follows:
+## Setup
 
-> Injecting Gatsby.js plugin "@vercel/gatsby-plugin-vercel-builder" to package.json
+1. Copy `.env.example` to `.env` and populate the required values.
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Run the bot:
+   ```bash
+   python src/bot.py
+   ```
 
-If auto-detection is not working, this plugin can also be installed and used manually:
+## Environment Variables
 
-1. `npm install @vercel/gatsby-plugin-vercel-builder`
-2. Add `'@vercel/gatsby-plugin-vercel-builder'` to your `gatsby-config.(t|j)s` file, such as:
+- `TELEGRAM_BOT_TOKEN` – Telegram bot token provided by BotFather.
+- `WEBHOOK_SECRET` – secret used to validate webhook requests.
+- `OPENAI_API_KEY` – OpenAI API key for model access.
+- `OPENAI_MODEL` – (optional) model name, default `gpt-4o-mini`.
 
-```js
-module.exports = {
-  plugins: ['@vercel/gatsby-plugin-vercel-builder'],
-};
-```
+## License
 
-3. 🚀 Ship It 🎉
+This project is licensed under the terms of the MIT license.
