@@ -1,0 +1,17 @@
+# Exclude development dependencies and files from Docker context
+node_modules
+npm-debug.log
+Dockerfile
+docker-compose.yml
+.git
+.gitignore
+.env
+.env.*
+scripts
+tests
+.vercel
+vercel.json
+datadog-synthetics.json
+*.md
+.tmp
+

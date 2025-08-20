@@ -1,22 +1,15 @@
-FROM node:20-alpine
-
+# Multi-stage build for smaller image and faster installs
+FROM node:20-alpine AS deps
 WORKDIR /app
-
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Создаем непривилегированного пользователя
-RUN addgroup -g 1001 -S appuser && \
-    adduser -u 1001 -S appuser -G appuser
-
-# Устанавливаем права
-RUN chown -R appuser:appuser /app
-
-# Переключаемся на непривилегированного пользователя
-USER appuser
-
+USER node
 EXPOSE 3000
-
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD wget -qO- http://localhost:3000/healthz || exit 1
 CMD ["node", "src/index.js"]

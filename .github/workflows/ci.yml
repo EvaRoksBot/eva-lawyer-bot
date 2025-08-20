@@ -6,24 +6,23 @@ on:
   push:
     branches: [ main, develop ]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
-
-      - name: Cache node modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
 
       - name: Cache build artifacts
         uses: actions/cache@v3
@@ -34,15 +33,15 @@ jobs:
           key: ${{ runner.os }}-build-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-build-
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Lint
         run: npm run lint
-        
+
       - name: Build
         run: npm run build
-        
+
       - name: Test
         run: npm test
