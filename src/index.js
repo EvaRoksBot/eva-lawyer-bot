@@ -1,6 +1,8 @@
 const express = require('express');
 const { Telegraf } = require('telegraf');
 const dotenv = require('dotenv');
+const { register } = require('./services/monitoring');
+const { logger } = require('./services/logger');
 
 dotenv.config();
 
@@ -15,7 +17,17 @@ app.post('/telegram/webhook', (req, res) => {
   bot.handleUpdate(req.body, res);
 });
 
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (err) {
+    logger.error('Error generating metrics', err);
+    res.status(500).end();
+  }
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.info(`Server running on port ${port}`);
+  logger.info(`Server running on port ${port}`);
 });
