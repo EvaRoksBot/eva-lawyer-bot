@@ -1,5 +1,5 @@
 const Redis = require('ioredis');
-const { logger } = require('./logger');
+const { logger } = require('./monitoring');
 
 const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
