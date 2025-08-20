@@ -1,12 +1,13 @@
 {
   "name": "eva-lawyer-bot",
-  "version": "6.0.0",
-  "description": "Telegram bot for Eva lawyer based on ChatGPT with advanced features",
-  "main": "api/telegram-unified-system.js",
+  "version": "6.2.0",
+  "description": "Telegram bot for Eva lawyer with smart scenarios and cross-links",
+  "main": "api/eva-bot-smart-scenarios.js",
   "scripts": {
-    "start": "node api/telegram-unified-system.js",
-    "dev": "node api/telegram-unified-system.js",
+    "start": "node api/eva-bot-smart-scenarios.js",
+    "dev": "node api/eva-bot-smart-scenarios.js",
     "test": "node api/telegram-assistant-api.js",
+    "enhanced": "node api/eva-bot-enhanced-logic.js",
     "build": "echo 'No build step required'",
     "deploy": "vercel --prod"
   },

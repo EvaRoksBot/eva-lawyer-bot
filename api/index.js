@@ -1,14 +1,14 @@
 // Eva Lawyer Bot - Main Entry Point
-// Основная точка входа для Vercel деплоя
+// Smart Scenarios v6.2 with Cross-Links
 
 // Загрузка переменных окружения
 require('dotenv').config();
 
-// Импорт улучшенной логики бота
-const EvaLawyerBotEnhanced = require('./eva-bot-enhanced-logic');
+// Импорт умных сценариев бота
+const EvaLawyerBotSmartScenarios = require('./eva-bot-smart-scenarios');
 
 // Создание и запуск бота
-const bot = new EvaLawyerBotEnhanced();
+const bot = new EvaLawyerBotSmartScenarios();
 
 // Экспорт для Vercel
 module.exports = (req, res) => {
@@ -28,9 +28,16 @@ module.exports = (req, res) => {
     } else {
         // GET запрос - статус бота
         res.status(200).json({
-            status: 'Eva Lawyer Bot Enhanced v6.1 is running',
+            status: 'Eva Lawyer Bot Smart Scenarios v6.2 is running',
             timestamp: new Date().toISOString(),
-            uptime: Date.now() - bot.metrics?.startTime || 0
+            features: [
+                'Cross-links between functions',
+                'INN auto-fill with DaData API',
+                'Smart contractor scoring',
+                'Risk analysis → Protocol disputes',
+                'Document chains and workflows'
+            ],
+            uptime: Date.now() - (bot.metrics?.startTime || Date.now())
         });
     }
 };
