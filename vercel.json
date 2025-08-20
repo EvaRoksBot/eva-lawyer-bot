@@ -1,50 +1,29 @@
 {
   "version": 2,
-  "name": "eva-lawyer-bot-unified-system",
+  "name": "eva-lawyer-bot-manus-full",
   "functions": {
-    "api/telegram-unified-system.js": {
-      "maxDuration": 60,
+    "api/telegram-webhook.js": {
+      "maxDuration": 30,
       "memory": 1024,
-      "runtime": "nodejs18.x"
+      "runtime": "nodejs20.x"
     },
-    "api/telegram-fixed-400.js": {
-      "maxDuration": 60,
+    "api/eva-bot-manus-full.js": {
+      "maxDuration": 30,
       "memory": 1024,
-      "runtime": "nodejs18.x"
-    },
-    "api/telegram-assistant-api.js": {
-      "maxDuration": 60,
-      "memory": 1024,
-      "runtime": "nodejs18.x"
+      "runtime": "nodejs20.x"
     }
   },
-  "rewrites": [
-    {
-      "source": "/api/telegram",
-      "destination": "/api/telegram-unified-system.js"
-    },
-    {
-      "source": "/api/telegram-unified-system",
-      "destination": "/api/telegram-unified-system.js"
-    },
-    {
-      "source": "/health",
-      "destination": "/api/telegram-unified-system.js"
-    },
-    {
-      "source": "/stats",
-      "destination": "/api/telegram-unified-system.js"
-    },
-    {
-      "source": "/",
-      "destination": "/api/telegram-unified-system.js"
-    }
+  "routes": [
+    { "src": "/healthz", "dest": "/api/telegram-webhook" },
+    { "src": "/diag", "dest": "/api/telegram-webhook" },
+    { "src": "/telegram/webhook", "dest": "/api/telegram-webhook" },
+    { "src": "/", "dest": "/api/telegram-webhook" }
   ],
   "env": {
     "NODE_ENV": "production",
     "TELEGRAM_BOT_TOKEN": "@telegram_bot_token",
     "OPENAI_API_KEY": "@openai_api_key",
-    "OPENAI_ASSISTANT_ID": "@openai_assistant_id",
+    "BASE_URL": "@base_url",
     "DADATA_API_KEY": "@dadata_api_key",
     "DADATA_SECRET_KEY": "@dadata_secret_key",
     "TG_WEBHOOK_SECRET": "@tg_webhook_secret"
@@ -59,7 +38,7 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "POST, OPTIONS"
+          "value": "POST, GET, OPTIONS"
         },
         {
           "key": "Access-Control-Allow-Headers",

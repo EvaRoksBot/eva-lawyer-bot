@@ -93,17 +93,25 @@ class EvaLawyerBotManusFull {
         const chatId = query.message.chat.id;
         const data = query.data;
         
+        console.log(`📞 Callback received: ${data} from user ${chatId}`);
+        
         try {
             await this.bot.answerCallbackQuery(query.id);
             
-            if (data.startsWith('go:')) {
+            if (data === 'go:home') {
+                console.log('🏠 Going to home menu');
+                await this.showMainMenu(chatId);
+            } else if (data.startsWith('go:')) {
                 const flowId = data.replace('go:', '');
+                console.log(`🚀 Starting flow: ${flowId}`);
                 await this.startFlow(chatId, flowId);
             } else if (data.startsWith('action:')) {
                 const action = data.replace('action:', '');
+                console.log(`⚡ Executing action: ${action}`);
                 await this.handleFlowAction(chatId, action, query);
-            } else if (data === 'go:home') {
-                await this.showMainMenu(chatId);
+            } else {
+                console.log(`❓ Unknown callback: ${data}`);
+                await this.bot.sendMessage(chatId, `❓ Неизвестная команда: ${data}`);
             }
         } catch (error) {
             console.error('Callback error:', error);
@@ -113,45 +121,59 @@ class EvaLawyerBotManusFull {
 
     // === ЗАПУСК СЦЕНАРИЕВ ===
     async startFlow(chatId, flowId) {
+        console.log(`🎯 Starting flow: ${flowId} for user: ${chatId}`);
+        
         const session = this.getSession(chatId);
         session.currentFlow = flowId;
         session.flowStep = 'start';
         
         switch (flowId) {
             case 'contract_review':
+                console.log('📄 Starting contract review flow');
                 await this.flowContractReview(chatId);
                 break;
             case 'risk_table':
+                console.log('📑 Starting risk table flow');
                 await this.flowRiskTable(chatId);
                 break;
             case 'supply_contract':
+                console.log('📝 Starting supply contract flow');
                 await this.flowSupplyContract(chatId);
                 break;
             case 'invoice':
+                console.log('💳 Starting invoice flow');
                 await this.flowInvoice(chatId);
                 break;
             case 'legal_opinion':
+                console.log('📚 Starting legal opinion flow');
                 await this.flowLegalOpinion(chatId);
                 break;
             case 'case_law':
+                console.log('📊 Starting case law flow');
                 await this.flowCaseLaw(chatId);
                 break;
             case 'dispute_prep':
+                console.log('⚔️ Starting dispute prep flow');
                 await this.flowDisputePrep(chatId);
                 break;
             case 'client_explain':
+                console.log('🖋️ Starting client explain flow');
                 await this.flowClientExplain(chatId);
                 break;
             case 'claim_reply':
+                console.log('📬 Starting claim reply flow');
                 await this.flowClaimReply(chatId);
                 break;
             case 'counterparty_score':
+                console.log('🏢 Starting counterparty score flow');
                 await this.flowCounterpartyScore(chatId);
                 break;
             case 'inn_autofill':
+                console.log('🔎 Starting INN autofill flow');
                 await this.flowInnAutofill(chatId);
                 break;
             default:
+                console.log(`❓ Unknown flow: ${flowId}, showing main menu`);
                 await this.showMainMenu(chatId);
         }
     }

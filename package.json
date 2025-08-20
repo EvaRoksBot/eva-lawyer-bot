@@ -1,11 +1,11 @@
 {
   "name": "eva-lawyer-bot",
-  "version": "7.0.0",
-  "description": "Telegram bot for Eva lawyer with full Manus architecture and 13 scenarios",
-  "main": "api/eva-bot-manus-full.js",
+  "version": "7.1.0",
+  "description": "Telegram bot for Eva lawyer with full Manus architecture, proper Vercel webhook setup",
+  "main": "api/telegram-webhook.js",
   "scripts": {
-    "start": "node api/eva-bot-manus-full.js",
-    "dev": "node api/eva-bot-manus-full.js",
+    "start": "node api/telegram-webhook.js",
+    "dev": "node api/telegram-webhook.js",
     "test": "node api/telegram-assistant-api.js",
     "enhanced": "node api/eva-bot-enhanced-logic.js",
     "build": "echo 'No build step required'",
