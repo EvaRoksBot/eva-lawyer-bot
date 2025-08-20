@@ -1,14 +1,14 @@
-// Eva Lawyer Bot - Main Entry Point
-// Smart Scenarios v6.2 with Cross-Links
+// Eva Lawyer Bot - Full Manus Architecture v7.0
+// Main entry point with all 13 scenarios
 
 // Загрузка переменных окружения
 require('dotenv').config();
 
-// Импорт умных сценариев бота
-const EvaLawyerBotSmartScenarios = require('./eva-bot-smart-scenarios');
+// Импорт полной архитектуры Manus
+const EvaLawyerBotManusFull = require('./eva-bot-manus-full');
 
 // Создание и запуск бота
-const bot = new EvaLawyerBotSmartScenarios();
+const bot = new EvaLawyerBotManusFull();
 
 // Экспорт для Vercel
 module.exports = (req, res) => {
@@ -28,14 +28,30 @@ module.exports = (req, res) => {
     } else {
         // GET запрос - статус бота
         res.status(200).json({
-            status: 'Eva Lawyer Bot Smart Scenarios v6.2 is running',
+            status: 'Eva Lawyer Bot Manus Full v7.0 is running',
             timestamp: new Date().toISOString(),
             features: [
-                'Cross-links between functions',
-                'INN auto-fill with DaData API',
-                'Smart contractor scoring',
-                'Risk analysis → Protocol disputes',
-                'Document chains and workflows'
+                '13 complete scenarios with full prompts',
+                'Cross-links between all functions',
+                'INN auto-fill via DaData API',
+                'Document export DOCX/PDF ready',
+                'Smart interface with loading animations',
+                'Contract review → Risk table → Protocol',
+                'Counterparty scoring → Deal terms',
+                'Legal opinions with case law analysis'
+            ],
+            scenarios: [
+                '🔍 Contract Review',
+                '📑 Risk Table', 
+                '📝 Supply Contract',
+                '💳 Invoice',
+                '📚 Legal Opinion',
+                '📊 Case Law Analysis',
+                '⚔️ Dispute Preparation',
+                '🖋️ Client Letter',
+                '📬 Claim Reply',
+                '🏢 Counterparty Scoring',
+                '🔎 INN Auto-fill'
             ],
             uptime: Date.now() - (bot.metrics?.startTime || Date.now())
         });

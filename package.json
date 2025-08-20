@@ -1,11 +1,11 @@
 {
   "name": "eva-lawyer-bot",
-  "version": "6.2.0",
-  "description": "Telegram bot for Eva lawyer with smart scenarios and cross-links",
-  "main": "api/eva-bot-smart-scenarios.js",
+  "version": "7.0.0",
+  "description": "Telegram bot for Eva lawyer with full Manus architecture and 13 scenarios",
+  "main": "api/eva-bot-manus-full.js",
   "scripts": {
-    "start": "node api/eva-bot-smart-scenarios.js",
-    "dev": "node api/eva-bot-smart-scenarios.js",
+    "start": "node api/eva-bot-manus-full.js",
+    "dev": "node api/eva-bot-manus-full.js",
     "test": "node api/telegram-assistant-api.js",
     "enhanced": "node api/eva-bot-enhanced-logic.js",
     "build": "echo 'No build step required'",
