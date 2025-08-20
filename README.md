@@ -1,20 +1,60 @@
-# @vercel/gatsby-plugin-vercel-builder
+# Eva Lawyer Bot
 
-This plugin generates [Vercel Build Output API v3](https://vercel.com/docs/build-output-api/v3) for Gatsby v4+ projects.
+Телеграм-бот для юридических консультаций и анализа документов на базе ChatGPT.
 
-The Vercel platform automatically injects this plugin for you if it can detect Gatsby v4+ in your project's `package.json` dependencies. If detected, you will see a log message in your project's [build logs](https://vercel.com/docs/concepts/deployments/logs#build-logs) as follows:
+## Функциональность
 
-> Injecting Gatsby.js plugin "@vercel/gatsby-plugin-vercel-builder" to package.json
+- Проверка договоров
+- Создание таблицы рисков
+- Подготовка юридических заключений
+- Анализ судебной практики
+- Генерация документов по шаблонам
+- Проверка контрагентов
 
-If auto-detection is not working, this plugin can also be installed and used manually:
+## Технический стек
 
-1. `npm install @vercel/gatsby-plugin-vercel-builder`
-2. Add `'@vercel/gatsby-plugin-vercel-builder'` to your `gatsby-config.(t|j)s` file, such as:
+- Node.js + Express
+- Telegram Bot API
+- OpenAI API
+- DaData API (опционально)
+- Vercel (хостинг)
 
-```js
-module.exports = {
-  plugins: ['@vercel/gatsby-plugin-vercel-builder'],
-};
+## Локальная разработка
+
+```bash
+# Установка зависимостей
+npm install
+
+# Создание .env файла
+cp .env.example .env
+# Заполните .env необходимыми значениями
+
+# Запуск в режиме разработки
+npm run dev
 ```
 
-3. 🚀 Ship It 🎉
+## Деплой
+
+Бот настроен на автоматический деплой через Vercel при пуше в main ветку.
+
+### Переменные окружения
+
+| Переменная | Описание |
+|------------|----------|
+| `TELEGRAM_BOT_TOKEN` | Токен бота Telegram |
+| `OPENAI_API_KEY` | API-ключ OpenAI |
+| `BASE_URL` | URL вашего приложения (для вебхуков) |
+| `DADATA_API_KEY` | API-ключ DaData (опционально) |
+| `DADATA_SECRET` | Секрет DaData (опционально) |
+| `LOG_LEVEL` | Уровень логирования (info, debug, error) |
+
+## Структура проекта
+
+```
+eva-lawyer-bot/
+├─ src/            # Исходный код
+├─ prompts/        # Промпты для OpenAI
+├─ templates/      # Шаблоны документов
+├─ tests/          # Тесты
+├─ scripts/        # Вспомогательные скрипты
+```

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  eva-lawyer-bot:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - ./src:/app/src
+      - ./prompts:/app/prompts
+      - ./templates:/app/templates

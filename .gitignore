@@ -1,2 +1,32 @@
+# Зависимости
 node_modules/
-package-lock.json
+npm-debug.log*
+
+# Переменные окружения
+.env
+.env.local
+.env.*.local
+
+# Логи
+logs
+*.log
+npm-debug.log*
+
+# Временные файлы
+tmp/
+.tmp/
+
+# Сборки
+dist/
+build/
+out/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
