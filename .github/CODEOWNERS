@@ -1,0 +1,6 @@
+# Глобальные владельцы по умолчанию
+* @EvaRoksBot
+
+# Конфигурации DevOps
+/.github/ @EvaRoksBot
+/scripts/ @EvaRoksBot
