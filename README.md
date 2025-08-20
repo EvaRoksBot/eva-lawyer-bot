@@ -18,6 +18,7 @@
 - OpenAI API
 - DaData API (опционально)
 - Vercel (хостинг)
+- Эндпоинт /metrics с Prometheus-совместимыми метриками без `prom-client`
 
 ## Локальная разработка
 
