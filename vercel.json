@@ -1,51 +1,18 @@
 {
   "version": 2,
-  "name": "eva-lawyer-bot-manus-full",
-  "functions": {
-    "api/telegram-webhook.js": {
-      "maxDuration": 30,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
-    },
-    "api/eva-bot-manus-full.js": {
-      "maxDuration": 30,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
+  "builds": [
+    {
+      "src": "src/index.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
-    { "src": "/healthz", "dest": "/api/telegram-webhook" },
-    { "src": "/diag", "dest": "/api/telegram-webhook" },
-    { "src": "/telegram/webhook", "dest": "/api/telegram-webhook" },
-    { "src": "/", "dest": "/api/telegram-webhook" }
+    {
+      "src": "/(.*)",
+      "dest": "src/index.js"
+    }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "TELEGRAM_BOT_TOKEN": "@telegram_bot_token",
-    "OPENAI_API_KEY": "@openai_api_key",
-    "BASE_URL": "@base_url",
-    "DADATA_API_KEY": "@dadata_api_key",
-    "DADATA_SECRET_KEY": "@dadata_secret_key",
-    "TG_WEBHOOK_SECRET": "@tg_webhook_secret"
-  },
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "POST, GET, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, X-Telegram-Bot-Api-Secret-Token"
-        }
-      ]
-    }
-  ]
+    "NODE_ENV": "production"
+  }
 }
-
