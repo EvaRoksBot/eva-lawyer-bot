@@ -42,48 +42,50 @@ class EvaLawyerBotManusFull {
 
     // === ГЛАВНОЕ МЕНЮ ===
     async handleStart(msg) {
-        const welcomeText = `👋 Добро пожаловать в Eva Lawyer Bot!
-
-🤖 Я — ваш юридический ассистент с полной архитектурой Manus
-🔗 Умные кросс-связи между всеми функциями
-🏢 Автозаполнение реквизитов по ИНН
-📄 Экспорт документов в DOCX/PDF
-
-Выберите нужное действие:`;
-
-        await this.showMainMenu(msg.chat.id, welcomeText);
+        await this.showMainMenu(msg.chat.id);
     }
 
-    async showMainMenu(chatId, text = "Ева — юридический ассистент. Выберите действие:") {
+    async showMainMenu(chatId, text = null) {
+        const welcomeText = text || `👋 Я — **Ева**, юридический ассистент компании **Эверест**.
+
+⚖️ Помогаю бизнесу без лишней бюрократии:
+• 📄 Проверяю договоры и составляю таблицы рисков
+• 📝 Формирую договоры, счета и протоколы разногласий
+• 📊 Анализирую судебную практику и готовлю правовые заключения
+• 🏢 Проверяю контрагентов по ИНН с умным скорингом
+• 📑 Экспортирую документы в DOCX и PDF
+
+Выберите действие ниже:`;
+
         const keyboard = {
             inline_keyboard: [
                 [
-                    { text: "🔍 Проверка договора", callback_data: "flow:contract_review" },
-                    { text: "📑 Таблица рисков", callback_data: "flow:risk_table" }
+                    { text: "🔍 Проверка договора", callback_data: "go:contract_review" },
+                    { text: "📑 Таблица рисков", callback_data: "go:risk_table" }
                 ],
                 [
-                    { text: "📝 Договор поставки", callback_data: "flow:supply_contract" },
-                    { text: "💳 Счёт на оплату", callback_data: "flow:invoice" }
+                    { text: "📝 Договор поставки", callback_data: "go:supply_contract" },
+                    { text: "💳 Счёт на оплату", callback_data: "go:invoice" }
                 ],
                 [
-                    { text: "📚 Юр. заключение", callback_data: "flow:legal_opinion" },
-                    { text: "📊 Практика судов", callback_data: "flow:case_law" }
+                    { text: "📚 Юр. заключение", callback_data: "go:legal_opinion" },
+                    { text: "📊 Практика судов", callback_data: "go:case_law" }
                 ],
                 [
-                    { text: "⚔️ Подготовка к спору", callback_data: "flow:dispute_prep" },
-                    { text: "🖋️ Письмо клиенту", callback_data: "flow:client_explain" }
+                    { text: "⚔️ Подготовка к спору", callback_data: "go:dispute_prep" },
+                    { text: "🖋️ Письмо клиенту", callback_data: "go:client_explain" }
                 ],
                 [
-                    { text: "📬 Ответ на претензию", callback_data: "flow:claim_reply" },
-                    { text: "🏢 Проверка контрагента", callback_data: "flow:counterparty_score" }
-                ],
-                [
-                    { text: "🔎 Автозаполнение по ИНН", callback_data: "flow:inn_autofill" }
+                    { text: "📬 Ответ на претензию", callback_data: "go:claim_reply" },
+                    { text: "🏢 Проверка контрагента (ИНН)", callback_data: "go:counterparty_score" }
                 ]
             ]
         };
 
-        await this.bot.sendMessage(chatId, text, { reply_markup: keyboard });
+        await this.bot.sendMessage(chatId, welcomeText, { 
+            reply_markup: keyboard,
+            parse_mode: 'Markdown'
+        });
     }
 
     // === ОБРАБОТКА CALLBACK ЗАПРОСОВ ===
@@ -94,8 +96,8 @@ class EvaLawyerBotManusFull {
         try {
             await this.bot.answerCallbackQuery(query.id);
             
-            if (data.startsWith('flow:')) {
-                const flowId = data.replace('flow:', '');
+            if (data.startsWith('go:')) {
+                const flowId = data.replace('go:', '');
                 await this.startFlow(chatId, flowId);
             } else if (data.startsWith('action:')) {
                 const action = data.replace('action:', '');
