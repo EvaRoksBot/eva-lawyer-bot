@@ -7,10 +7,14 @@ services:
       dockerfile: Dockerfile
     container_name: eva-lawyer-bot
     restart: unless-stopped
+    depends_on:
+      - redis
     ports:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      NODE_ENV: production
     volumes:
       - ./tmp:/app/tmp
     healthcheck:
