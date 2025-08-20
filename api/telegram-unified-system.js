@@ -1,5 +1,8 @@
-// Eva Lawyer Bot - Unified System v6.0
-// Интегрированная система с единой архитектурой всех компонентов
+// Eva Lawyer Bot - Enhanced Logic v6.1
+// Полная настройка логики бота с GPT API, промптами, скорингом и inline меню
+
+// Загрузка переменных окружения
+require('dotenv').config();
 
 const TelegramBot = require('node-telegram-bot-api');
 const OpenAI = require('openai');
