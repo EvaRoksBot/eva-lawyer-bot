@@ -1,2 +1,9 @@
 node_modules/
 package-lock.json
+
+# Ignore TypeScript incremental build files
+*.tsbuildinfo
+
+# Ignore Python bytecode
+__pycache__/
+*.py[cod]
