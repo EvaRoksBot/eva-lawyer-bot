@@ -1,0 +1,25 @@
+name: Datadog Synthetics Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  synthetics:
+    name: Run Synthetic Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Datadog Synthetic tests
+        uses: DataDog/synthetics-ci-github-action@v0.16.0
+        with:
+          api_key: ${{ secrets.DATADOG_API_KEY }}
+          app_key: ${{ secrets.DATADOG_APP_KEY }}
+          test_search_query: 'tag:eva-lawyer-bot'
+          fail_on_critical: true
+          fail_on_timeout: false
+          subdomain: 'app.datadoghq.eu'
+

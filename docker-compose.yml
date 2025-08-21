@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  eva-lawyer-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eva-lawyer-bot
+    restart: unless-stopped
+    depends_on:
+      - redis
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./tmp:/app/tmp
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  redis:
+    image: redis:7-alpine
+    container_name: eva-lawyer-bot-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+
+volumes:
+  redis-data:

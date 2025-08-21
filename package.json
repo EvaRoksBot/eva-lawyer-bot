@@ -1,0 +1,34 @@
+{
+  "name": "eva-lawyer-bot",
+  "version": "18.0.0",
+  "description": "Telegram bot for Eva lawyer based on ChatGPT - Clean Version",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "dev": "node src/main.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "telegraf": "^4.15.6",
+    "openai": "^4.28.4",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EvaRoksBot/eva-lawyer-bot.git"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "lawyer",
+    "legal",
+    "chatgpt",
+    "openai"
+  ],
+  "author": "EvaRoksBot",
+  "license": "MIT"
+}

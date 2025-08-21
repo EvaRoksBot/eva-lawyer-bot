@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/main.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/telegram/webhook",
+      "dest": "/src/main.js"
+    },
+    {
+      "src": "/health",
+      "dest": "/src/main.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/src/main.js"
+    }
+  ],
+  "env": {
+    "TELEGRAM_BOT_TOKEN": "@telegram_bot_token",
+    "OPENAI_API_KEY": "@openai_api_key"
+  }
+}
