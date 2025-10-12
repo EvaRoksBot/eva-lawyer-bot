@@ -3,8 +3,8 @@
 
 class EnhancedDaData {
     constructor() {
-        this.apiKey = process.env.DADATA_API_KEY || 'ap6te7l4ub6sq1dwt608';
-        this.secretKey = process.env.DADATA_SECRET_KEY || '8bf724e4ee6cc03ce6b6';
+        this.apiKey = process.env.DADATA_API_KEY || '';
+        this.secretKey = process.env.DADATA_SECRET || '';
         this.baseUrl = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs';
         this.cleanUrl = 'https://cleaner.dadata.ru/api/v1/clean';
         this.retryAttempts = 3;

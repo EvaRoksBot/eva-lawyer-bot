@@ -25,7 +25,7 @@ class EvaLawyerBotAssistant {
         this.botToken = process.env.TELEGRAM_BOT_TOKEN;
         this.openaiApiKey = process.env.OPENAI_API_KEY;
         this.dadataApiKey = process.env.DADATA_API_KEY;
-        this.dadataSecret = process.env.DADATA_SECRET_KEY;
+        this.dadataSecret = process.env.DADATA_SECRET;
         this.webhookSecret = process.env.TG_WEBHOOK_SECRET;
         
         // Validate and clean environment variables

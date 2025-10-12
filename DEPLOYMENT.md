@@ -27,8 +27,13 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 # Опциональные переменные
 DADATA_API_KEY=your_dadata_api_key_here
-DADATA_SECRET_KEY=your_dadata_secret_key_here
+DADATA_SECRET=your_dadata_secret_here
 TG_WEBHOOK_SECRET=your_webhook_secret_here
+
+# MCP интеграция (опционально, Bitrix24 + DaData)
+MCP_SERVER_URL=https://mcp.your-domain.com
+MCP_API_KEY=your_mcp_token
+MCP_TIMEOUT=10000
 
 # Настройки производительности
 NODE_ENV=production
@@ -174,7 +179,9 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DADATA_API_KEY=${DADATA_API_KEY}
-      - DADATA_SECRET_KEY=${DADATA_SECRET_KEY}
+      - DADATA_SECRET=${DADATA_SECRET}
+      - MCP_SERVER_URL=${MCP_SERVER_URL}
+      - MCP_API_KEY=${MCP_API_KEY}
       - TG_WEBHOOK_SECRET=${TG_WEBHOOK_SECRET}
     restart: unless-stopped
     healthcheck:
@@ -201,7 +208,9 @@ heroku create your-app-name
 heroku config:set TELEGRAM_BOT_TOKEN=your_token
 heroku config:set OPENAI_API_KEY=your_key
 heroku config:set DADATA_API_KEY=your_dadata_key
-heroku config:set DADATA_SECRET_KEY=your_dadata_secret
+heroku config:set DADATA_SECRET=your_dadata_secret
+heroku config:set MCP_SERVER_URL=https://mcp.your-domain.com
+heroku config:set MCP_API_KEY=your_mcp_token
 heroku config:set TG_WEBHOOK_SECRET=your_webhook_secret
 
 # Развертывание

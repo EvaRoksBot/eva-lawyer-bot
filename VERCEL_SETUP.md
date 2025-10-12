@@ -7,28 +7,30 @@
 Go to Vercel Dashboard → Project → Settings → Environment Variables:
 
 ```bash
-TELEGRAM_BOT_TOKEN = 8355504616:AAGrfPmGarrAz0YxrycZcy2hg9uT-vaYLGg
+TELEGRAM_BOT_TOKEN = your_telegram_token
 OPENAI_API_KEY = your_openai_key_here
 BASE_URL = https://your-project-name.vercel.app
 DADATA_API_KEY = your_dadata_key (optional)
-DADATA_SECRET_KEY = your_dadata_secret (optional)
+DADATA_SECRET = your_dadata_secret (optional)
+MCP_SERVER_URL = https://mcp.your-domain.com (optional)
+MCP_API_KEY = your_mcp_token (optional)
 ```
 
 ### 2. Setup Telegram Webhook
 
 ```bash
 # Delete old webhook
-curl -s "https://api.telegram.org/bot8355504616:AAGrfPmGarrAz0YxrycZcy2hg9uT-vaYLGg/deleteWebhook"
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/deleteWebhook"
 
 # Set new webhook to Vercel
-curl -s -X POST "https://api.telegram.org/bot8355504616:AAGrfPmGarrAz0YxrycZcy2hg9uT-vaYLGg/setWebhook" \
+curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   -d "url=https://your-project-name.vercel.app/telegram/webhook" \
   -d "drop_pending_updates=true" \
   -d "allowed_updates[]=message" \
   -d "allowed_updates[]=callback_query"
 
 # Check webhook status
-curl -s "https://api.telegram.org/bot8355504616:AAGrfPmGarrAz0YxrycZcy2hg9uT-vaYLGg/getWebhookInfo"
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo"
 ```
 
 ### 3. Test Endpoints
@@ -41,7 +43,7 @@ curl -s "https://your-project-name.vercel.app/healthz"
 curl -s "https://your-project-name.vercel.app/diag"
 
 # Bot info
-curl -s "https://api.telegram.org/bot8355504616:AAGrfPmGarrAz0YxrycZcy2hg9uT-vaYLGg/getMe"
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe"
 ```
 
 ### 4. Test Bot Functions

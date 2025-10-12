@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: eva-lawyer-bot
+    env: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    numInstances: 1
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DADATA_API_KEY
+        sync: false
+      - key: DADATA_SECRET
+        sync: false
+      - key: MCP_SERVER_URL
+        sync: false
+      - key: MCP_API_KEY
+        sync: false
+      - key: MCP_TIMEOUT
+        value: "10000"
+      - key: MCP_ENDPOINT_BITRIX_STATUS
+        sync: false
+      - key: MCP_ENDPOINT_BITRIX_SYNC
+        sync: false
+      - key: MCP_ENDPOINT_DADATA_STATUS
+        sync: false
+      - key: MCP_ENDPOINT_DADATA_LOOKUP
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+      - key: TG_WEBHOOK_SECRET
+        sync: false

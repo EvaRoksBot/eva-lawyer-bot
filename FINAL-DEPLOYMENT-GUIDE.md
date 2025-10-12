@@ -25,7 +25,11 @@ OPENAI_ASSISTANT_ID=asst_xxxxx
 
 # Для DaData интеграции
 DADATA_API_KEY=your_dadata_api_key
-DADATA_SECRET_KEY=your_dadata_secret_key
+DADATA_SECRET=your_dadata_secret_key
+
+# MCP сервер (если используется Bitrix24/DaData через MCP)
+MCP_SERVER_URL=https://mcp.your-domain.com
+MCP_API_KEY=your_mcp_token
 
 # Для безопасности webhook
 TG_WEBHOOK_SECRET=your_random_secret_string

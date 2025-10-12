@@ -15,7 +15,7 @@ class EvaLawyerBotSmartScenarios {
             telegramToken: process.env.TELEGRAM_BOT_TOKEN,
             openaiApiKey: process.env.OPENAI_API_KEY,
             dadataApiKey: process.env.DADATA_API_KEY,
-            dadataSecret: process.env.DADATA_SECRET_KEY,
+            dadataSecret: process.env.DADATA_SECRET,
             model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
             maxTokens: 2000,
             temperature: 0.3

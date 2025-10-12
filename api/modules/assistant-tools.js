@@ -1,10 +1,16 @@
 // Advanced tools for OpenAI Assistant API
 // Specialized legal tools and integrations
 
+const CounterpartyService = require('./counterparty-service');
+
 class AssistantTools {
-    constructor(dadataApi = null, documentEngine = null) {
+    constructor(dadataApi = null, documentEngine = null, counterpartyService = null) {
         this.dadataApi = dadataApi;
         this.documentEngine = documentEngine;
+        this.counterpartyService = counterpartyService || new CounterpartyService({
+            dadata: dadataApi,
+            logger: console
+        });
         
         // Tool definitions for OpenAI Assistant
         this.toolDefinitions = [
@@ -261,13 +267,6 @@ class AssistantTools {
     // Check company by INN
     async checkCompanyInn(inn) {
         try {
-            if (!this.dadataApi) {
-                return {
-                    error: "DaData API недоступен",
-                    suggestion: "Проверьте настройки API ключей"
-                };
-            }
-
             // Validate INN format
             if (!/^[0-9]{10,12}$/.test(inn)) {
                 return {
@@ -276,38 +275,38 @@ class AssistantTools {
                 };
             }
 
-            // Check if dadataApi has the required method
-            if (typeof this.dadataApi.checkINN !== 'function') {
-                return {
-                    error: "Метод checkINN недоступен в DaData API",
-                    suggestion: "Обновите модуль DaData"
-                };
-            }
+            const result = await this.counterpartyService.lookupByInn(inn);
 
-            const result = await this.dadataApi.checkINN(inn);
-            
-            if (result.success) {
+            if (!result.orgInfo || result.orgInfo.found === false) {
                 return {
-                    success: true,
-                    company_info: {
-                        name: result.data.name,
-                        inn: result.data.inn,
-                        kpp: result.data.kpp,
-                        ogrn: result.data.ogrn,
-                        address: result.data.address,
-                        status: result.data.status,
-                        director: result.data.director,
-                        registration_date: result.data.registration_date,
-                        authorized_capital: result.data.authorized_capital
-                    },
-                    legal_analysis: this.analyzeLegalStatus(result.data)
-                };
-            } else {
-                return {
-                    error: result.error,
+                    error: "Организация с указанным ИНН не найдена",
                     suggestion: "Проверьте правильность ИНН или попробуйте позже"
                 };
             }
+
+            const company = result.orgInfo;
+
+            return {
+                success: true,
+                company_info: {
+                    name: company.name?.full || company.name?.short || 'Неизвестно',
+                    inn: company.inn || inn,
+                    kpp: company.kpp || null,
+                    ogrn: company.ogrn || null,
+                    address: company.address?.full || company.address?.value || 'Адрес не указан',
+                    status: company.status?.value || company.status || 'Статус не указан',
+                    director: company.management?.name || null,
+                    registration_date: company.status?.date || null,
+                    authorized_capital: company.authorized_capital || company.capital || null
+                },
+                legal_analysis: {
+                    risks: result.risks?.risks || [],
+                    recommendations: result.risks?.recommendations || [],
+                    status_assessment: (result.risks?.riskLevel || 'MEDIUM').toLowerCase(),
+                    score: result.risks?.score ?? null,
+                    source: result.source
+                }
+            };
         } catch (error) {
             return {
                 error: `Ошибка проверки ИНН: ${error.message}`

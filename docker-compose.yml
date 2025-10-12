@@ -15,10 +15,17 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      MCP_SERVER_URL: ${MCP_SERVER_URL:-}
+      MCP_API_KEY: ${MCP_API_KEY:-}
+      MCP_TIMEOUT: ${MCP_TIMEOUT:-10000}
+      MCP_ENDPOINT_BITRIX_STATUS: ${MCP_ENDPOINT_BITRIX_STATUS:-}
+      MCP_ENDPOINT_BITRIX_SYNC: ${MCP_ENDPOINT_BITRIX_SYNC:-}
+      MCP_ENDPOINT_DADATA_STATUS: ${MCP_ENDPOINT_DADATA_STATUS:-}
+      MCP_ENDPOINT_DADATA_LOOKUP: ${MCP_ENDPOINT_DADATA_LOOKUP:-}
     volumes:
       - ./tmp:/app/tmp
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3

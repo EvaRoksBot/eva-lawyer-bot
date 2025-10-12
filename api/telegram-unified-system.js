@@ -24,7 +24,7 @@ class EvaLawyerBotUnified {
             openaiApiKey: process.env.OPENAI_API_KEY,
             assistantId: process.env.OPENAI_ASSISTANT_ID,
             dadataApiKey: process.env.DADATA_API_KEY,
-            dadataSecret: process.env.DADATA_SECRET_KEY,
+            dadataSecret: process.env.DADATA_SECRET,
             webhookSecret: process.env.TG_WEBHOOK_SECRET,
             environment: process.env.NODE_ENV || 'production'
         };

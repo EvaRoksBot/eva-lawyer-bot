@@ -7,9 +7,10 @@ RUN npm ci --omit=dev
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache curl
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 USER node
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD wget -qO- http://localhost:3000/healthz || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD curl -fsS http://localhost:3000/healthz || exit 1
 CMD ["node", "src/index.js"]
