@@ -1,21 +1,23 @@
 // Everest Router - Handles all callback queries and routing
-const { 
-    getMainMenu, 
-    getContractsMenu, 
-    getEverestPackageMenu, 
-    getINNMenu, 
-    getBillingMenu, 
-    getReportsMenu, 
-    getSettingsMenu, 
+const {
+    getMainMenu,
+    getContractsMenu,
+    getEverestPackageMenu,
+    getINNMenu,
+    getBillingMenu,
+    getReportsMenu,
+    getSettingsMenu,
     getHelpMenu,
     validateINN,
-    routeCallback 
+    routeCallback
 } = require('./everest-menu');
+const CounterpartyService = require('./counterparty-service');
 
 class EverestRouter {
     constructor(bot) {
         this.bot = bot;
         this.userStates = new Map(); // Simple in-memory state storage
+        this.counterpartyService = new CounterpartyService({ logger: console });
     }
 
     // Main routing handler
@@ -393,16 +395,19 @@ class EverestRouter {
                     }
                 );
                 break;
-            case 'int':
+            case 'int': {
+                const status = await this.counterpartyService.getIntegrationStatus();
                 await this.bot.editMessageText(
-                    "🔗 Интеграции\n\nBitrix24: Не подключен\nDaData: Подключен\n\n(Функция в разработке)",
+                    this.formatIntegrationStatus(status),
                     {
                         chat_id: chatId,
                         message_id: messageId,
-                        reply_markup: { inline_keyboard: [[{ text: "← Назад", callback_data: "eva:settings:menu" }]] }
+                        reply_markup: { inline_keyboard: [[{ text: "← Назад", callback_data: "eva:settings:menu" }]] },
+                        parse_mode: 'Markdown'
                     }
                 );
                 break;
+            }
             case 'notif':
                 await this.bot.editMessageText(
                     "🔔 Уведомления\n\n(Функция в разработке)",
@@ -467,18 +472,28 @@ class EverestRouter {
             }
 
             await this.bot.sendMessage(chatId, `✅ ИНН принят: \`${text}\`\n\n🔍 Запускаю проверку контрагента...`, { parse_mode: 'Markdown' });
-            
-            // TODO: Integrate with DaData API for real INN checking
-            setTimeout(async () => {
-                await this.bot.sendMessage(chatId, `📊 Результат проверки ИНН ${text}:\n\n(Интеграция с DaData в процессе)`, {
+
+            try {
+                const result = await this.counterpartyService.lookupByInn(text);
+                await this.bot.sendMessage(
+                    chatId,
+                    this.counterpartyService.formatReport(result),
+                    {
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [[{ text: '🏠 Главное меню', callback_data: 'eva:home' }]]
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error('INN lookup failed:', error);
+                await this.bot.sendMessage(chatId, '❌ Не удалось получить данные по контрагенту. Попробуйте позже.', {
                     reply_markup: {
-                        inline_keyboard: [
-                            [{ text: "🏠 Главное меню", callback_data: "eva:home" }]
-                        ]
+                        inline_keyboard: [[{ text: '🏠 Главное меню', callback_data: 'eva:home' }]]
                     }
                 });
-            }, 2000);
-            
+            }
+
             return;
         }
 
@@ -514,6 +529,37 @@ class EverestRouter {
     // Clear user state
     clearUserState(chatId) {
         this.userStates.delete(chatId);
+}
+
+    formatIntegrationStatus(status) {
+        const bitrix = status.bitrix || {};
+        const dadata = status.dadata || {};
+        const lines = [
+            '🔗 *Интеграции*',
+            '',
+            `Bitrix24: ${bitrix.connected ? '✅ Подключен' : '⚠️ Не подключен'}`
+        ];
+
+        if (bitrix.details) {
+            lines.push(`• ${bitrix.details}`);
+        }
+        if (bitrix.lastSync) {
+            lines.push(`• Последняя синхронизация: ${new Date(bitrix.lastSync).toLocaleString('ru-RU')}`);
+        }
+
+        lines.push('', `DaData: ${dadata.connected ? '✅ Подключена' : '⚠️ Не подключена'}`);
+        if (dadata.details) {
+            lines.push(`• ${dadata.details}`);
+        }
+        if (dadata.balance !== undefined && dadata.balance !== null) {
+            lines.push(`• Баланс: ${dadata.balance}`);
+        }
+        if (dadata.lastSuccess) {
+            lines.push(`• Последний успешный запрос: ${new Date(dadata.lastSuccess).toLocaleString('ru-RU')}`);
+        }
+
+        lines.push('', `_Источник: ${status.source === 'mcp' ? 'MCP сервер' : 'Локальная конфигурация'}_`);
+        return lines.join('\n');
     }
 }
 

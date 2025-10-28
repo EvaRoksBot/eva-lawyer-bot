@@ -3,6 +3,7 @@
 
 const ContextManager = require('./context-manager');
 const AIEngine = require('./ai-engine');
+const CounterpartyService = require('./counterparty-service');
 
 class SmartRouter {
     constructor() {
@@ -12,6 +13,7 @@ class SmartRouter {
         this.middlewares = [];
         this.commandHandlers = new Map();
         this.callbackHandlers = new Map();
+        this.counterpartyService = new CounterpartyService({ logger: console });
         
         this.initializeRoutes();
         this.initializeMiddlewares();
@@ -339,7 +341,7 @@ class SmartRouter {
         try {
             // Здесь будет интеграция с DaData API
             const innData = await this.checkInnWithDaData(innToCheck);
-            
+
             // AI анализ данных контрагента
             const aiAnalysis = await this.aiEngine.analyzeCounterparty(userId, innData);
             
@@ -526,8 +528,13 @@ class SmartRouter {
     async handleClear(update) { /* TODO */ }
     async handleError(update, error) { /* TODO */ }
     async handleUnknownCallback(update) { /* TODO */ }
-    async checkInnWithDaData(inn) { /* TODO */ }
-    async formatInnCheckResult(data, analysis) { /* TODO */ }
+    async checkInnWithDaData(inn) {
+        return this.counterpartyService.lookupByInn(inn);
+    }
+
+    async formatInnCheckResult(data, analysis) {
+        return this.counterpartyService.formatReport(data, analysis);
+    }
 }
 
 module.exports = SmartRouter;

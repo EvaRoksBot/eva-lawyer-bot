@@ -4,16 +4,16 @@
  */
 
 const DADATA_API_KEY = process.env.DADATA_API_KEY;
-const DADATA_SECRET_KEY = process.env.DADATA_SECRET_KEY;
+const DADATA_SECRET = process.env.DADATA_SECRET;
 const DADATA_BASE_URL = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs';
 
 /**
  * Check if DaData API keys are configured
  */
 function isDaDataConfigured() {
-  return DADATA_API_KEY && DADATA_SECRET_KEY && 
-         DADATA_API_KEY !== 'placeholder_dadata_key' && 
-         DADATA_SECRET_KEY !== 'placeholder_dadata_secret';
+  return DADATA_API_KEY && DADATA_SECRET &&
+         DADATA_API_KEY !== 'placeholder_dadata_key' &&
+         DADATA_SECRET !== 'placeholder_dadata_secret';
 }
 
 /**
@@ -27,7 +27,7 @@ async function makeDaDataRequest(endpoint, data) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Token ${DADATA_API_KEY}`,
-        'X-Secret': DADATA_SECRET_KEY
+        'X-Secret': DADATA_SECRET
       },
       body: JSON.stringify(data)
     });
